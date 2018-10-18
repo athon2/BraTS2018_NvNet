@@ -1,2 +1,6 @@
+# general 
 __pycache__
-.ipynb*
+*.ipynb*
+
+
+resnet.py
