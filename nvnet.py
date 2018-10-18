@@ -99,11 +99,54 @@ class OutputTransition(nn.Module):
     def forward(self, x):
         return self.actv1(self.conv1(x))
 
+class VDResampling(nn.Module):
+    def __init__(self, inChans=256, outChans=256, stride=2, kernel_size=3, padding=1, activation="relu", normalizaiton="group_normalization"):
+        super(VDResampling, self).__init__()
+        midChans = int(inChans / 2)
+        if normalizaiton == "group_normalization":
+            self.gn1 = nn.GroupNorm(num_groups=4,num_channels=inChans)
+        if activation == "relu":
+            self.actv1 = nn.ReLU(inplace=True)
+            self.actv2 = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.dense1 = nn.Linear(in_features=16*10*12*8, out_features=inChans)
+        
+        self.dense2 = nn.Linear(in_features=midChans, out_features=outChans)
+        self.conv2 = nn.Conv3d(in_channels=midChans,out_channels=outChans,kernel_size=1)
+        self.up0 = LinearUpSampling(outChans,outChans)
+        
+    def forward(self, x):
+        out = self.gn1(x)
+        out = self.actv1(out)
+        out = self.conv1(out)
+        out = out.view(-1, self.num_flat_features(out))
+        out = self.dense1(out)
+        out = VDraw(out)
+        out = self.dense2(out)
+        out = self.actv2(out)
+        out = out.view(1,128)
+        out = self.conv2(out)
+        out = self.up0(out)
+        
+        return out
+        
+    def num_flat_features(self, x):
+        size = x.size()[1:]
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
 
+def VDraw(x):
+    return torch.distributions.Normal(x[:,:128], x[:,128:]).sample()
+
+        
 class VAE(nn.Module):
     def __init__(self, inChans=256, outChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VAE, self).__init__()
-        
+#         self.v_d0 = VDownSampling(256, 128)
+#         self.v_up = 
+#         self.vd_block2
     def forward(self, x):
         pass
         
