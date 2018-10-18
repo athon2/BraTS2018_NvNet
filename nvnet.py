@@ -19,7 +19,7 @@ class DownSampling(nn.Module):
         return self.conv1(x)
     
 class EncoderBlock(nn.Module):
-    def __init__(self, inChans, outChans, stride=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
+    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
         super(EncoderBlock, self).__init__()
         
         if normalizaiton == "group_normalization":
@@ -28,8 +28,8 @@ class EncoderBlock(nn.Module):
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1, stride=stride)
-        self.conv2 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1, stride=stride)
+        self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
+        self.conv2 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         
         
     def forward(self, x):
@@ -63,7 +63,7 @@ class LinearUpSampling(nn.Module):
         return out
     
 class DecoderBlock(nn.Module):
-    def __init__(self, inChans, outChans, stride=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
+    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
         super(DecoderBlock, self).__init__()
         
         if normalizaiton == "group_normalization":
@@ -72,8 +72,8 @@ class DecoderBlock(nn.Module):
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1, stride=stride)
-        self.conv2 = nn.Conv3d(in_channels=outChans, out_channels=outChans, kernel_size=1, stride=stride)
+        self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
+        self.conv2 = nn.Conv3d(in_channels=outChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         
         
     def forward(self, x):
@@ -99,17 +99,18 @@ class OutputTransition(nn.Module):
     def forward(self, x):
         return self.actv1(self.conv1(x))
 
+
 class VAE(nn.Module):
-    def __init__(self, inChans):
+    def __init__(self, inChans=256, outChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VAE, self).__init__()
-        pass
+        
     def forward(self, x):
         pass
         
 class NvNet(nn.Module):
-    def __init__(self, inChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
+    def __init__(self, inChans=4, outChans=1, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(NvNet, self).__init__()
-        self.in_conv0 = DownSampling(inChans=inChans, outChans=32, kernel_size=1, stride=1, padding=0)
+        self.in_conv0 = DownSampling(inChans=inChans, outChans=32, stride=1)
         self.en_block0 = EncoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
         self.en_down1 = DownSampling(32, 64)
         self.en_block1_0 = EncoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
@@ -129,7 +130,7 @@ class NvNet(nn.Module):
         self.de_block1 = DecoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
         self.de_up0 =  LinearUpSampling(64, 32, mode=mode)
         self.de_block0 = DecoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
-        self.de_end = OutputTransition(32, 1)
+        self.de_end = OutputTransition(32, outChans)
         
     def forward(self, x):
         out_init = self.in_conv0(x)
