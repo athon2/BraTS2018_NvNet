@@ -58,7 +58,7 @@ class LinearUpSampling(nn.Module):
     def forward(self, x, skipx=None):
         out = self.conv1(x)
         out = self.up1(out)
-        if skipx:
+        if skipx is not None:
             out = torch.cat((out, skipx), 1)
             out = self.conv2(out)
         
@@ -170,9 +170,9 @@ class VAE(nn.Module):
         out = self.vd_end(out)
 
         return out
-            
+
 class NvNet(nn.Module):
-    def __init__(self, inChans=4, outChans=1, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
+    def __init__(self, inChans=4, seg_outChans=1, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(NvNet, self).__init__()
         self.in_conv0 = DownSampling(inChans=inChans, outChans=32, stride=1)
         self.en_block0 = EncoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
@@ -194,8 +194,10 @@ class NvNet(nn.Module):
         self.de_block1 = DecoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
         self.de_up0 =  LinearUpSampling(64, 32, mode=mode)
         self.de_block0 = DecoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
-        self.de_end = OutputTransition(32, outChans)
+        self.de_end = OutputTransition(32, seg_outChans)
         
+        self.vae = VAE(256, inChans)
+
     def forward(self, x):
         out_init = self.in_conv0(x)
         out_en0 = self.en_block0(out_init)
@@ -209,7 +211,9 @@ class NvNet(nn.Module):
         out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
-        
-        out_end = self.de_end(out_de0)
 
-        return out_end
+        out_end = self.de_end(out_de0)
+        out_vae = self.vae(out_en3)
+        out_final = torch.cat((out_end, out_vae), 1)
+
+        return out_final
