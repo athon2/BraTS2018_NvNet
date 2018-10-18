@@ -1,5 +1,5 @@
 import os 
-os.environ["CUDA_VISIABLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIABLE_DEVICES"] = "1"
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -46,19 +46,21 @@ class EncoderBlock(nn.Module):
         return out
     
 class LinearUpSampling(nn.Module):
-    def __init__(self, inChans, outChans, mode="trilinear", align_corners=True):
+    # Trilinear 
+    def __init__(self, inChans, outChans, scale_factor=2, mode="trilinear", align_corners=True):
         super(LinearUpSampling, self).__init__()
         
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
-        scale_factor = inChans / outChans
+ 
         self.up1 = nn.Upsample(scale_factor=scale_factor,mode=mode, align_corners=align_corners)
-        self.conv2 = nn.Conv3d(in_channels=2*outChans, out_channels=outChans, kernel_size=1)
+        self.conv2 = nn.Conv3d(in_channels=outChans, out_channels=outChans, kernel_size=1)
     
-    def forward(self, x, skipx):
+    def forward(self, x, skipx=None):
         out = self.conv1(x)
         out = self.up1(out)
-        out = torch.cat((out, skipx), 1)
-        out = self.conv2(out)
+        if skipx:
+            out = torch.cat((out, skipx), 1)
+            out = self.conv2(out)
         
         return out
     
@@ -111,9 +113,9 @@ class VDResampling(nn.Module):
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
         self.dense1 = nn.Linear(in_features=16*10*12*8, out_features=inChans)
         
-        self.dense2 = nn.Linear(in_features=midChans, out_features=outChans)
-        self.conv2 = nn.Conv3d(in_channels=midChans,out_channels=outChans,kernel_size=1)
-        self.up0 = LinearUpSampling(outChans,outChans)
+        self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*10*12*8)
+
+        self.up0 = LinearUpSampling(midChans,outChans)
         
     def forward(self, x):
         out = self.gn1(x)
@@ -124,8 +126,7 @@ class VDResampling(nn.Module):
         out = VDraw(out)
         out = self.dense2(out)
         out = self.actv2(out)
-        out = out.view(1,128)
-        out = self.conv2(out)
+        out = out.view((1, 128, 10, 12, 8))
         out = self.up0(out)
         
         return out
@@ -140,16 +141,36 @@ class VDResampling(nn.Module):
 def VDraw(x):
     return torch.distributions.Normal(x[:,:128], x[:,128:]).sample()
 
-        
+class VDecoderBlock(nn.Module):
+    def __init__(self, inChans, outChans, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
+        super(VDecoderBlock, self).__init__()
+
+        self.up0 = LinearUpSampling(inChans, outChans, mode=mode)
+        self.block = DecoderBlock(outChans, outChans, activation=activation, normalizaiton=normalizaiton)
+    
+    def forward(self, x):
+        out = self.up0(x)
+        out = self.block(out)
+
+        return out
+
 class VAE(nn.Module):
     def __init__(self, inChans=256, outChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VAE, self).__init__()
-#         self.v_d0 = VDownSampling(256, 128)
-#         self.v_up = 
-#         self.vd_block2
+        self.vd_resample = VDResampling(inChans, inChans)
+        self.vd_block2 = VDecoderBlock(inChans, inChans//2)
+        self.vd_block1 = VDecoderBlock(inChans//2, inChans//4)
+        self.vd_block0 = VDecoderBlock(inChans//4, inChans//8)
+        self.vd_end = nn.Conv3d(inChans//8, outChans, kernel_size=1)
     def forward(self, x):
-        pass
-        
+        out = self.vd_resample(x)
+        out = self.vd_block2(out)
+        out = self.vd_block1(out)
+        out = self.vd_block0(out)
+        out = self.vd_end(out)
+
+        return out
+            
 class NvNet(nn.Module):
     def __init__(self, inChans=4, outChans=1, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(NvNet, self).__init__()

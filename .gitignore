@@ -2,5 +2,6 @@
 __pycache__
 *.ipynb*
 
-
+# custom
 resnet.py
+test_script.py
