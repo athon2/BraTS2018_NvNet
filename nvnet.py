@@ -19,6 +19,9 @@ class DownSampling(nn.Module):
         return self.conv1(x)
     
 class EncoderBlock(nn.Module):
+    '''
+    Encoder block
+    '''
     def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
         super(EncoderBlock, self).__init__()
         
@@ -46,18 +49,23 @@ class EncoderBlock(nn.Module):
         return out
     
 class LinearUpSampling(nn.Module):
-    # Trilinear 
+    '''
+    Trilinear interpolate to upsampling
+    '''
     def __init__(self, inChans, outChans, scale_factor=2, mode="trilinear", align_corners=True):
         super(LinearUpSampling, self).__init__()
-        
+        self.scale_factor = scale_factor
+        self.mode = mode
+        self.align_corners = align_corners
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
- 
-        self.up1 = nn.Upsample(scale_factor=scale_factor,mode=mode, align_corners=align_corners)
-        self.conv2 = nn.Conv3d(in_channels=outChans, out_channels=outChans, kernel_size=1)
+
+        self.conv2 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
     
     def forward(self, x, skipx=None):
         out = self.conv1(x)
-        out = self.up1(out)
+        # out = self.up1(out)
+        out = nn.functional.interpolate(out, scale_factor=self.scale_factor, mode=self.mode, align_corners=self.align_corners)
+
         if skipx is not None:
             out = torch.cat((out, skipx), 1)
             out = self.conv2(out)
@@ -65,6 +73,9 @@ class LinearUpSampling(nn.Module):
         return out
     
 class DecoderBlock(nn.Module):
+    '''
+    Decoder block
+    '''
     def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
         super(DecoderBlock, self).__init__()
         
@@ -92,6 +103,10 @@ class DecoderBlock(nn.Module):
         return out
     
 class OutputTransition(nn.Module):
+    '''
+    Decoder output layer 
+    output the prediction of segmentation result
+    '''
     def __init__(self, inChans, outChans):
         super(OutputTransition, self).__init__()
         
@@ -102,6 +117,9 @@ class OutputTransition(nn.Module):
         return self.actv1(self.conv1(x))
 
 class VDResampling(nn.Module):
+    '''
+    Variational Auto-Encoder Resampling block
+    '''
     def __init__(self, inChans=256, outChans=256, stride=2, kernel_size=3, padding=1, activation="relu", normalizaiton="group_normalization"):
         super(VDResampling, self).__init__()
         midChans = int(inChans / 2)
@@ -139,9 +157,13 @@ class VDResampling(nn.Module):
         return num_features
 
 def VDraw(x):
+    # Generate A Gaussian Distributions with mean(128-d) and std(128-d)
     return torch.distributions.Normal(x[:,:128], x[:,128:]).sample()
 
 class VDecoderBlock(nn.Module):
+    '''
+    Varational Decoder block
+    '''
     def __init__(self, inChans, outChans, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VDecoderBlock, self).__init__()
 
@@ -155,6 +177,9 @@ class VDecoderBlock(nn.Module):
         return out
 
 class VAE(nn.Module):
+    '''
+    Variational Auto-Encoder : to group the features extracted by Encoder
+    '''
     def __init__(self, inChans=256, outChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VAE, self).__init__()
         self.vd_resample = VDResampling(inChans, inChans)
@@ -172,9 +197,18 @@ class VAE(nn.Module):
         return out
 
 class NvNet(nn.Module):
-    def __init__(self, inChans=4, seg_outChans=1, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
+    def __init__(self,
+                input_shape = (1, 4, 160, 192, 128) 
+                # inChans = 4, 
+                seg_outChans = 1, 
+                
+                activation="relu", 
+                normalizaiton="group_normalization", 
+                mode="trilinear"):
         super(NvNet, self).__init__()
-        self.in_conv0 = DownSampling(inChans=inChans, outChans=32, stride=1)
+        # Encoder Blocks
+        self.inChans = input_shape[1]
+        self.in_conv0 = DownSampling(inChans=self.inChans, outChans=32, stride=1)
         self.en_block0 = EncoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
         self.en_down1 = DownSampling(32, 64)
         self.en_block1_0 = EncoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
@@ -187,7 +221,7 @@ class NvNet(nn.Module):
         self.en_block3_1 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
         self.en_block3_2 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
         self.en_block3_3 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
-        
+        # Decoder Blocks
         self.de_up2 =  LinearUpSampling(256, 128, mode=mode)
         self.de_block2 = DecoderBlock(128, 128, activation=activation, normalizaiton=normalizaiton)
         self.de_up1 =  LinearUpSampling(128, 64, mode=mode)
@@ -196,7 +230,8 @@ class NvNet(nn.Module):
         self.de_block0 = DecoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
         self.de_end = OutputTransition(32, seg_outChans)
         
-        self.vae = VAE(256, inChans)
+        # Variational Auto-Encoder
+        self.vae = VAE(256, self.inChans)
 
     def forward(self, x):
         out_init = self.in_conv0(x)
@@ -208,6 +243,7 @@ class NvNet(nn.Module):
                 self.en_block3_1(
                     self.en_block3_0(
                         self.en_down3(out_en2)))))
+
         out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
