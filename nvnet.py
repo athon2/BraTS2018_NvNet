@@ -13,6 +13,7 @@ class DownSampling(nn.Module):
                      stride=stride,
                      padding=padding,
                      bias=False)
+        
     def forward(self, x):
         return self.conv1(x)
     
@@ -44,6 +45,7 @@ class EncoderBlock(nn.Module):
         out = self.conv2(out)
         
         out += residual
+        
         return out
     
 class LinearUpSampling(nn.Module):
@@ -56,7 +58,6 @@ class LinearUpSampling(nn.Module):
         self.mode = mode
         self.align_corners = align_corners
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
-
         self.conv2 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
     
     def forward(self, x, skipx=None):
@@ -98,6 +99,7 @@ class DecoderBlock(nn.Module):
         out = self.conv2(out)
         
         out += residual
+        
         return out
     
 class OutputTransition(nn.Module):
@@ -120,6 +122,7 @@ class VDResampling(nn.Module):
     '''
     def __init__(self, inChans=256, outChans=256, dense_features=(10,12,8), stride=2, kernel_size=3, padding=1, activation="relu", normalizaiton="group_normalization"):
         super(VDResampling, self).__init__()
+        
         midChans = int(inChans / 2)
         self.dense_features = dense_features
         if normalizaiton == "group_normalization":
@@ -129,9 +132,7 @@ class VDResampling(nn.Module):
             self.actv2 = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
         self.dense1 = nn.Linear(in_features=16*dense_features[0]*dense_features[1]*dense_features[2], out_features=inChans)
-        
         self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*dense_features[0]*dense_features[1]*dense_features[2])
-
         self.up0 = LinearUpSampling(midChans,outChans)
         
     def forward(self, x):
@@ -153,10 +154,11 @@ class VDResampling(nn.Module):
         num_features = 1
         for s in size:
             num_features *= s
+            
         return num_features
 
 def VDraw(x):
-    # Generate A Gaussian Distributions with mean(128-d) and std(128-d)
+    # Generate A Gaussian Distribution with the given mean(128-d) and std(128-d)
     return torch.distributions.Normal(x[:,:128], x[:,128:]).sample()
 
 class VDecoderBlock(nn.Module):
@@ -187,6 +189,7 @@ class VAE(nn.Module):
         self.vd_block1 = VDecoderBlock(inChans//2, inChans//4)
         self.vd_block0 = VDecoderBlock(inChans//4, inChans//8)
         self.vd_end = nn.Conv3d(inChans//8, outChans, kernel_size=1)
+        
     def forward(self, x):
         out = self.vd_resample(x)
         out = self.vd_block2(out)
@@ -204,6 +207,7 @@ class NvNet(nn.Module):
                 normalizaiton="group_normalization", 
                 mode="trilinear"):
         super(NvNet, self).__init__()
+        
         # some critical parameters
         self.inChans = input_shape[1]
         self.dense_features = (input_shape[2]//16, input_shape[3]//16,input_shape[4]//16)
@@ -222,6 +226,7 @@ class NvNet(nn.Module):
         self.en_block3_1 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
         self.en_block3_2 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
         self.en_block3_3 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
+        
         # Decoder Blocks
         self.de_up2 =  LinearUpSampling(256, 128, mode=mode)
         self.de_block2 = DecoderBlock(128, 128, activation=activation, normalizaiton=normalizaiton)
@@ -248,7 +253,6 @@ class NvNet(nn.Module):
         out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
-
         out_end = self.de_end(out_de0)
         out_vae = self.vae(out_en3)
         out_final = torch.cat((out_end, out_vae), 1)
