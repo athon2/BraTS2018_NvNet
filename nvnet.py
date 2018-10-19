@@ -120,7 +120,7 @@ class VDResampling(nn.Module):
     '''
     Variational Auto-Encoder Resampling block
     '''
-    def __init__(self, inChans=256, outChans=256, stride=2, kernel_size=3, padding=1, activation="relu", normalizaiton="group_normalization"):
+    def __init__(self, inChans=256, outChans=256, dense_features=10*12*8, stride=2, kernel_size=3, padding=1, activation="relu", normalizaiton="group_normalization"):
         super(VDResampling, self).__init__()
         midChans = int(inChans / 2)
         if normalizaiton == "group_normalization":
@@ -129,9 +129,9 @@ class VDResampling(nn.Module):
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.dense1 = nn.Linear(in_features=16*10*12*8, out_features=inChans)
+        self.dense1 = nn.Linear(in_features=16*dense_features, out_features=inChans)
         
-        self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*10*12*8)
+        self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*dense_features)
 
         self.up0 = LinearUpSampling(midChans,outChans)
         
@@ -180,9 +180,10 @@ class VAE(nn.Module):
     '''
     Variational Auto-Encoder : to group the features extracted by Encoder
     '''
-    def __init__(self, inChans=256, outChans=4, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
+    def __init__(self, inChans=256, outChans=4, dense_features=10*12*8, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VAE, self).__init__()
-        self.vd_resample = VDResampling(inChans, inChans)
+        # self.dense_features = dense_features
+        self.vd_resample = VDResampling(inChans=inChans, outChans=inChans, dense_features=dense_features)
         self.vd_block2 = VDecoderBlock(inChans, inChans//2)
         self.vd_block1 = VDecoderBlock(inChans//2, inChans//4)
         self.vd_block0 = VDecoderBlock(inChans//4, inChans//8)
@@ -198,7 +199,7 @@ class VAE(nn.Module):
 
 class NvNet(nn.Module):
     def __init__(self,
-                input_shape = (1, 4, 160, 192, 128) 
+                input_shape = (1, 4, 160, 192, 128), 
                 # inChans = 4, 
                 seg_outChans = 1, 
                 
@@ -206,8 +207,10 @@ class NvNet(nn.Module):
                 normalizaiton="group_normalization", 
                 mode="trilinear"):
         super(NvNet, self).__init__()
-        # Encoder Blocks
+        # some critical parameters
         self.inChans = input_shape[1]
+        self.dense_features = input_shape[2] * input_shape[3] * input_shape[4] // ( 16 * 16 * 16)
+        # Encoder Blocks
         self.in_conv0 = DownSampling(inChans=self.inChans, outChans=32, stride=1)
         self.en_block0 = EncoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
         self.en_down1 = DownSampling(32, 64)
@@ -231,7 +234,7 @@ class NvNet(nn.Module):
         self.de_end = OutputTransition(32, seg_outChans)
         
         # Variational Auto-Encoder
-        self.vae = VAE(256, self.inChans)
+        self.vae = VAE(256, outChans=self.inChans, dense_features=self.dense_features)
 
     def forward(self, x):
         out_init = self.in_conv0(x)
@@ -244,12 +247,12 @@ class NvNet(nn.Module):
                     self.en_block3_0(
                         self.en_down3(out_en2)))))
 
-        out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
-        out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
-        out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
+        # out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
+        # out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
+        # out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
 
-        out_end = self.de_end(out_de0)
+        # out_end = self.de_end(out_de0)
         out_vae = self.vae(out_en3)
-        out_final = torch.cat((out_end, out_vae), 1)
+        # out_final = torch.cat((out_end, out_vae), 1)
 
-        return out_final
+        return out_vae
