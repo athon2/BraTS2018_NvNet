@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class DownSampling(nn.Module):
-    # 3x3x3 convolution,1 padding as default
+    # 3x3x3 convolution and 1 padding as default
     def __init__(self, inChans, outChans, stride=2, kernel_size=3, padding=1):
         super(DownSampling, self).__init__()
         
@@ -163,7 +163,7 @@ def VDraw(x):
 
 class VDecoderBlock(nn.Module):
     '''
-    Varational Decoder block
+    Variational Decoder block
     '''
     def __init__(self, inChans, outChans, activation="relu", normalizaiton="group_normalization", mode="trilinear"):
         super(VDecoderBlock, self).__init__()
