@@ -158,7 +158,7 @@ class VDResampling(nn.Module):
         return num_features
 
 def VDraw(x):
-    # Generate A Gaussian Distribution with the given mean(128-d) and std(128-d)
+    # Generate a Gaussian distribution with the given mean(128-d) and std(128-d)
     return torch.distributions.Normal(x[:,:128], x[:,128:]).sample()
 
 class VDecoderBlock(nn.Module):
