@@ -29,6 +29,7 @@ class CustomKLLoss(_Loss):
 
     def forward(self, mean, std):
         return torch.mean(torch.mul(mean, mean)) + torch.mean(torch.mul(std, std)) - torch.mean(torch.log(torch.mul(std, std))) - 1
+    
 class CombinedLoss(_Loss):
     '''
     Combined_loss = Dice_loss + k1 * L2_loss + k2 * KL_loss
