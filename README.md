@@ -6,7 +6,7 @@ This is a **Pytorch** implementation of NvNet, based on **Andriy Myronenko's** p
 ---
 - [x] NvNet 
 - [x] Loss
-- [] DataLoader
-- [] Train
-- [] Test
+- [ ] DataLoader
+- [ ] Train
+- [ ] Test
 
