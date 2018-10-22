@@ -19,7 +19,7 @@ class BratsDataset(Dataset):
             self.data_ids = config["test_file"]
             
         self.data_list = pickle_load(self.data_ids)
-    
+        
     def __getitem__(self, index):
         pass
     
