@@ -5,3 +5,6 @@ __pycache__
 # custom
 resnet.py
 test_script.py
+checkpoint_models/*.pth
+isensee_mixed*
+
