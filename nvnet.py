@@ -111,7 +111,7 @@ class OutputTransition(nn.Module):
         super(OutputTransition, self).__init__()
         
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=1)
-        self.actv1 = F.sigmoid
+        self.actv1 = torch.sigmoid
         
     def forward(self, x):
         return self.actv1(self.conv1(x))
@@ -140,14 +140,15 @@ class VDResampling(nn.Module):
         out = self.actv1(out)
         out = self.conv1(out)
         out = out.view(-1, self.num_flat_features(out))
-        out = self.dense1(out)
-        out = VDraw(out)
+        out_vd = self.dense1(out)
+        distr = out_vd 
+        out = VDraw(out_vd)
         out = self.dense2(out)
         out = self.actv2(out)
         out = out.view((1, 128, self.dense_features[0],self.dense_features[1],self.dense_features[2]))
         out = self.up0(out)
         
-        return out
+        return out, distr
         
     def num_flat_features(self, x):
         size = x.size()[1:]
@@ -191,13 +192,13 @@ class VAE(nn.Module):
         self.vd_end = nn.Conv3d(inChans//8, outChans, kernel_size=1)
         
     def forward(self, x):
-        out = self.vd_resample(x)
+        out, distr = self.vd_resample(x)
         out = self.vd_block2(out)
         out = self.vd_block1(out)
         out = self.vd_block0(out)
         out = self.vd_end(out)
 
-        return out
+        return out, distr
 
 class NvNet(nn.Module):
     def __init__(self,
@@ -254,7 +255,7 @@ class NvNet(nn.Module):
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
         out_end = self.de_end(out_de0)
-        out_vae = self.vae(out_en3)
+        out_vae, out_distr = self.vae(out_en3)
         out_final = torch.cat((out_end, out_vae), 1)
 
-        return out_final
+        return out_final, out_distr

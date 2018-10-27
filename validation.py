@@ -21,9 +21,11 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
-            targets = targets.cuda(async=True)
-        inputs = Variable(inputs, volatile=True)
-        targets = Variable(targets, volatile=True)
+            #targets = targets.cuda(async=True)
+            inputs = inputs.type(torch.FloatTensor)
+            inputs = inputs.cuda(opt["cuda_devices"])
+            targets = targets.type(torch.FloatTensor)
+            targets = targets.cuda(opt["cuda_devices"])
         outputs = model(inputs)
         loss = criterion(outputs, targets)
         acc = calculate_accuracy(outputs, targets)

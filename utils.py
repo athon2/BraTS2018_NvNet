@@ -1,5 +1,6 @@
 import pickle
 import csv
+import torch
 
 def pickle_load(in_file):
     with open(in_file, "rb") as opened_file:
@@ -53,16 +54,29 @@ def load_value_file(file_path):
     return value
 
 
+#def calculate_accuracy(outputs, targets):
+#    batch_size = targets.size(0)
+#
+#    _, pred = outputs.topk(1, 1, True)
+#    pred = pred.t()
+#    correct = pred.eq(targets.view(1, -1))
+#    n_correct_elems = correct.float().sum().data[0]
+#
+#    return n_correct_elems / batch_size
 def calculate_accuracy(outputs, targets):
+    return dice_coefficient(outputs, targets)
+
+def dice_coefficient(outputs, targets, eps=1e-8):
     batch_size = targets.size(0)
+    y_pred = outputs[:,0,:,:,:]
+    y_truth = targets[:,0,:,:,:]
 
-    _, pred = outputs.topk(1, 1, True)
-    pred = pred.t()
-    correct = pred.eq(targets.view(1, -1))
-    n_correct_elems = correct.float().sum().data[0]
-
-    return n_correct_elems / batch_size
-
+    intersection = torch.sum(torch.mul(y_pred, y_truth)) + eps
+    union = torch.sum(y_pred) + torch.sum(y_truth) + eps
+    dice = 2 * intersection / union 
+    
+    return dice / batch_size
+    
 def normalize_data(data, mean, std):
     pass
     

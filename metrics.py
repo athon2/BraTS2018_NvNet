@@ -11,11 +11,11 @@ class SoftDiceLoss(_Loss):
         super(SoftDiceLoss, self).__init__()
 
     def forward(self, y_pred, y_true, eps=1e-8):
-        intersection = torch.sum(torch.mul(y_pred, y_true))
-        union = torch.sum(torch.mul(y_pred, y_pred)) + torch.sum(torch.mul(y_true, y_true))
+        intersection = torch.sum(torch.mul(y_pred, y_true)) + eps
+        union = torch.sum(torch.mul(y_pred, y_pred)) + torch.sum(torch.mul(y_true, y_true)) + eps
 
         dice = 2 * intersection / union 
-        dice_loss = - dice
+        dice_loss = 1 - dice
 
         return dice_loss
 
@@ -48,9 +48,9 @@ class CombinedLoss(_Loss):
         seg_pred, seg_truth =  (y_pred[:,0,:,:,:], y_true[:,0,:,:,:])
         vae_pred, vae_truth = (y_pred[:,1:,:,:,:], y_true[:,1:,:,:,:])
         dice_loss = self.dice_loss(seg_pred, seg_truth)
-        l2_loss = self.k1 * self.l2_loss(vae_pred, vae_truth)
-        kl_div = self.k2 * self.kl_loss(est_mean, est_std)
-        combined_loss = dice_loss + l2_loss + kl_div
-        print("The dice_loss:%.4f, L2_loss:%.4f, KL_div:%.4f"%(dice_loss,l2_loss,kl_div))
+        l2_loss = self.l2_loss(vae_pred, vae_truth)
+        kl_div = self.kl_loss(est_mean, est_std)
+        combined_loss = dice_loss + self.k1 * l2_loss + self.k2 * kl_div
+        print("dice_loss:%.4f, L2_loss:%.4f, KL_div:%.4f, combined_loss:%.4f"%(dice_loss,l2_loss,kl_div,combined_loss))
         
         return combined_loss
