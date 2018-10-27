@@ -30,10 +30,8 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         outputs, distr = model(inputs)
         loss = criterion(outputs, targets, distr)
         
-        
-        acc = calculate_accuracy(outputs, targets)
-
-        losses.update(loss.item(), inputs.size(0))
+        acc = calculate_accuracy(outputs.cpu(), targets.cpu())
+        losses.update(loss.cpu(), inputs.size(0))
         accuracies.update(acc, inputs.size(0))
 
         optimizer.zero_grad()

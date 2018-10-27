@@ -20,7 +20,7 @@ config["initial_learning_rate"] = 5e-4
 config["batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
 # config["labels"] = (1, 2, 4)
-config["labels"] = (1,)
+config["labels"] = (2,)
 config["n_labels"] = len(config["labels"])
 config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
@@ -41,7 +41,7 @@ config["L2_norm"] = 1e-5
 config["patience"] = 5
 config["epochs"] = 100
 config["checkpoint"] = 3
-
+config["label_containing"] = True
 def load_old_model(model_path):
     pass
 

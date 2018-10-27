@@ -72,7 +72,25 @@ def augment_image(image, flip_axis=None, offset_factor=None):
         image = offset_image(image, offset_factor=offset_factor)
         
     return image
+
+def get_target_label(label_data, config):
+    target_label = np.zeros(label_data.shape)
     
+    for l_idx in range(config["n_labels"]):
+        assert config["labels"][l_idx] in [1,2,4],"Wrong label!Expected 1 or 2 or 4, but got {0}".format(config["labels"][l_idx])
+        if not config["label_containing"]:
+            target_label[np.where(label_data == config["labels"][l_idx])]= 1
+        else:
+            if config["labels"][l_idx] == 1:
+                target_label[np.where(label_data == 1)] = 1
+                target_label[np.where(label_data == 4)] = 1
+            elif config["labels"][l_idx] == 2:
+                target_label[np.where(label_data > 0 )] = 1
+            elif config["labels"][l_idx] == 4:
+                target_label[np.where(label_data == 4)]= 1                
+           
+    return target_label
+                     
 class BratsDataset(Dataset):
     def __init__(self, phase, config):
         super(BratsDataset, self).__init__()
@@ -93,10 +111,10 @@ class BratsDataset(Dataset):
     def __getitem__(self, index):
         item = self.data_list[index]
         input_data = self.data_file.root.data[item] # data shape:(4, 128, 128, 128)
-        seg_label = self.data_file.root.truth[item] # truth shape:(1, 128, 128, 128)
+        label_data = self.data_file.root.truth[item] # truth shape:(1, 128, 128, 128)
+        seg_label = get_target_label(label_data, self.config)
         affine = self.data_file.root.affine[item]
         # dimessions of data
-        #print("seg label shape",seg_label.shape)
         n_dim = len(seg_label[0].shape)
         #print("n_dim:",n_dim)
         if self.phase == "train":
