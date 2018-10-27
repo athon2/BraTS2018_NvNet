@@ -7,6 +7,6 @@ This is a **unofficial** **Pytorch** implementation of BraTS_NvNet, based on **A
 - [x] NvNet 
 - [x] Loss
 - [x] DataLoader
-- [ ] Train
+- [x] Train
 - [ ] Test
 

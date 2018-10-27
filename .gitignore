@@ -7,4 +7,4 @@ resnet.py
 test_script.py
 checkpoint_models/*.pth
 isensee_mixed*
-
+*.log
