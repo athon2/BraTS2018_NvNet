@@ -11,7 +11,7 @@ class SoftDiceLoss(_Loss):
         super(SoftDiceLoss, self).__init__()
 
     def forward(self, y_pred, y_true, eps=1e-8):
-        intersection = torch.sum(torch.mul(y_pred, y_true)) + eps
+        intersection = torch.sum(torch.mul(y_pred, y_true)) + eps/2
         union = torch.sum(torch.mul(y_pred, y_pred)) + torch.sum(torch.mul(y_true, y_true)) + eps
 
         dice = 2 * intersection / union 

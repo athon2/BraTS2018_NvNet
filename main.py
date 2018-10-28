@@ -15,9 +15,9 @@ from nvnet import NvNet
 from metrics import CombinedLoss
 from dataset import BratsDataset
 config = dict()
-config["cuda_devices"] = 0
-config["labels"] = (1,)
-config["model_file"] = os.path.abspath("single_label_1_augment.h5")
+config["cuda_devices"] = 1
+config["labels"] = (2,)
+config["model_file"] = os.path.abspath("single_label_2_augment.h5")
 config["initial_learning_rate"] = 5e-4
 config["batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
@@ -86,7 +86,7 @@ def main():
                            lr=config["initial_learning_rate"],
                            weight_decay = config["L2_norm"])
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=config["patience"])
-    print("run")    
+    print("training on label:{}".format(config["labels"]))    
     for i in range(config["epochs"]):
         train_epoch(epoch=i, 
                     data_loader=train_loader, 
