@@ -15,12 +15,13 @@ from nvnet import NvNet
 from metrics import CombinedLoss
 from dataset import BratsDataset
 config = dict()
-config["cuda_devices"] = 1
+config["cuda_devices"] = 0
+config["labels"] = (1,)
+config["model_file"] = os.path.abspath("single_label_1_augment.h5")
 config["initial_learning_rate"] = 5e-4
 config["batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
 # config["labels"] = (1, 2, 4)
-config["labels"] = (2,)
 config["n_labels"] = len(config["labels"])
 config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
@@ -33,7 +34,6 @@ config["random_flip"] = True  # augments the data by randomly flipping an axis d
 # config["permute"] = True  # data shape must be a cube. Augments the data by permuting in various directions
 config["result_path"] = "./checkpoint_models/"
 config["data_file"] = os.path.abspath("isensee_mixed_brats_data.h5")
-config["model_file"] = os.path.abspath("nvnet_single_1_test.h5")
 config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.

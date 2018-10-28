@@ -69,7 +69,8 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         'acc': accuracies.avg,
         'lr': optimizer.param_groups[0]['lr']
     })
-    print("Epoch:{0}\t seg_acc:{.4f}".format(epoch, accuracies.avg))
+    epoch_time = time.time() - end_time
+    print("Epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f}minutes".format(epoch, accuracies.avg, epoch_time/ 60))
     if epoch % opt["checkpoint"] == 0:
         save_file_path = os.path.join(opt["result_path"],
                                       'save_{}.pth'.format(epoch))
