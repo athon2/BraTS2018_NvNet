@@ -18,16 +18,18 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
     losses = AverageMeter()
     accuracies = AverageMeter()
 
-    end_time = time.time()
+    start_time = time.time()
+    end_time = start_time
     for i, (inputs, targets) in enumerate(data_loader):
         data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
             inputs = inputs.type(torch.FloatTensor)
-            inputs = inputs.cuda(opt["cuda_devices"])
+            inputs = inputs.cuda()
             targets = targets.type(torch.FloatTensor)
-            targets = targets.cuda(opt["cuda_devices"])
+            targets = targets.cuda()
         outputs, distr = model(inputs)
+        # import pdb;pdb.set_trace()
         loss = criterion(outputs, targets, distr)
         
         acc = calculate_accuracy(outputs.cpu(), targets.cpu())
@@ -69,8 +71,8 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         'acc': accuracies.avg,
         'lr': optimizer.param_groups[0]['lr']
     })
-    epoch_time = time.time() - end_time
-    print("Epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f}minutes".format(epoch, accuracies.avg, epoch_time/ 60))
+    epoch_time = time.time() - start_time
+    print("Epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} hours".format(epoch, accuracies.avg, epoch_time / 3600))
     if epoch % opt["checkpoint"] == 0:
         save_file_path = os.path.join(opt["result_path"],
                                       'save_{}.pth'.format(epoch))

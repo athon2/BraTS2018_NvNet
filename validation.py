@@ -23,31 +23,32 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         if opt["cuda_devices"] is not None:
             #targets = targets.cuda(async=True)
             inputs = inputs.type(torch.FloatTensor)
-            inputs = inputs.cuda(opt["cuda_devices"])
+            inputs = inputs.cuda()
             targets = targets.type(torch.FloatTensor)
-            targets = targets.cuda(opt["cuda_devices"])
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        acc = calculate_accuracy(outputs, targets)
+            targets = targets.cuda()
+        with torch.no_grad():
+            outputs, distr = model(inputs)
+        loss = criterion(outputs.cpu(), targets.cpu(), distr.cpu())
+        acc = calculate_accuracy(outputs.cpu(), targets.cpu())
 
-        losses.update(loss.data[0], inputs.size(0))
+        losses.update(loss.cpu(), inputs.size(0))
         accuracies.update(acc, inputs.size(0))
 
         batch_time.update(time.time() - end_time)
         end_time = time.time()
 
-        print('Epoch: [{0}][{1}/{2}]\t'
-              'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-              'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-              'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
-                  epoch,
-                  i + 1,
-                  len(data_loader),
-                  batch_time=batch_time,
-                  data_time=data_time,
-                  loss=losses,
-                  acc=accuracies))
+#        print('Epoch: [{0}][{1}/{2}]\t'
+#              'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+#              'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+#              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+#              'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
+#                  epoch,
+#                  i + 1,
+#                  len(data_loader),
+#                  batch_time=batch_time,
+#                  data_time=data_time,
+#                  loss=losses,
+#                  acc=accuracies))
 
     logger.log({'epoch': epoch, 'loss': losses.avg, 'acc': accuracies.avg})
 

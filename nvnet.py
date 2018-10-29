@@ -21,7 +21,7 @@ class EncoderBlock(nn.Module):
     '''
     Encoder block
     '''
-    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
+    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=8, activation="relu", normalizaiton="group_normalization"):
         super(EncoderBlock, self).__init__()
         
         if normalizaiton == "group_normalization":
@@ -75,7 +75,7 @@ class DecoderBlock(nn.Module):
     '''
     Decoder block
     '''
-    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=4, activation="relu", normalizaiton="group_normalization"):
+    def __init__(self, inChans, outChans, stride=1, padding=1, num_groups=8, activation="relu", normalizaiton="group_normalization"):
         super(DecoderBlock, self).__init__()
         
         if normalizaiton == "group_normalization":
@@ -126,7 +126,7 @@ class VDResampling(nn.Module):
         midChans = int(inChans / 2)
         self.dense_features = dense_features
         if normalizaiton == "group_normalization":
-            self.gn1 = nn.GroupNorm(num_groups=4,num_channels=inChans)
+            self.gn1 = nn.GroupNorm(num_groups=8,num_channels=inChans)
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)

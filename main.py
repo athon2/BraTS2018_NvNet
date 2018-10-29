@@ -1,5 +1,6 @@
 # main.py
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import sys
 import json
 import numpy as np
@@ -15,10 +16,10 @@ from nvnet import NvNet
 from metrics import CombinedLoss
 from dataset import BratsDataset
 config = dict()
-config["cuda_devices"] = 1
+config["cuda_devices"] = True
 config["labels"] = (2,)
-config["model_file"] = os.path.abspath("single_label_2_augment.h5")
-config["initial_learning_rate"] = 5e-4
+config["model_file"] = os.path.abspath("single_label_{}_flip.h5".format(config["labels"][0]))
+config["initial_learning_rate"] = 1e-4
 config["batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
 # config["labels"] = (1, 2, 4)
@@ -29,7 +30,7 @@ config["nb_channels"] = len(config["training_modalities"])
 config["input_shape"] = tuple([config["batch_size"]] + [config["nb_channels"]] + list(config["image_shape"]))
 config["loss_k1_weight"] = 0.1
 config["loss_k2_weight"] = 0.1
-config["random_offset"] = True
+config["random_offset"] = False
 config["random_flip"] = True  # augments the data by randomly flipping an axis during generating a data
 # config["permute"] = True  # data shape must be a cube. Augments the data by permuting in various directions
 config["result_path"] = "./checkpoint_models/"
@@ -38,7 +39,7 @@ config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 config["L2_norm"] = 1e-5
-config["patience"] = 5
+config["patience"] = 1
 config["epochs"] = 100
 config["checkpoint"] = 3
 config["label_containing"] = True
@@ -79,8 +80,8 @@ def main():
                           ['epoch', 'loss', 'acc'])
     
     if config["cuda_devices"] is not None:
-        model = model.cuda(config["cuda_devices"])
-        loss_function = loss_function.cuda(config["cuda_devices"])
+        model = model.cuda()
+        loss_function = loss_function.cuda()
         
     optimizer = optim.Adam(parameters, 
                            lr=config["initial_learning_rate"],
@@ -96,7 +97,7 @@ def main():
                     opt=config, 
                     epoch_logger=train_logger, 
                     batch_logger=train_batch_logger)
-    
+        
         val_epoch(epoch=i, 
                   data_loader=valildation_loader, 
                   model=model, 
