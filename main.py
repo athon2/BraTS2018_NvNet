@@ -9,6 +9,7 @@ from torch import nn
 from torch import optim
 from torch.optim import lr_scheduler
 
+from tqdm import tqdm
 from utils import Logger
 from train import train_epoch
 from validation import val_epoch
@@ -39,7 +40,8 @@ config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 config["L2_norm"] = 1e-5
-config["patience"] = 1
+config["patience"] = 0
+config["lr_decay"] = 0.9
 config["epochs"] = 100
 config["checkpoint"] = 3
 config["label_containing"] = True
@@ -71,13 +73,11 @@ def main():
                                                shuffle=False, 
                                                pin_memory=True)
     
-    train_logger = Logger(os.path.join("./logs/", config["model_file"].split(".h5")[0]+"_train.log"), 
-                          ['epoch', 'loss', 'acc', 'lr'])
-    train_batch_logger = Logger(os.path.join("./logs/", config["model_file"].split(".h5")[0]+"_batch.log"), 
-                          ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
+    train_logger = Logger(model_name=config["model_file"],header=['epoch', 'loss', 'acc', 'lr'])
+    # train_batch_logger = Logger(os.path.join("./logs/", config["model_file"].split(".h5")[0]+"_batch.log"), 
+    #                      ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
     
-    valdate_logger = Logger(os.path.join("./logs/", config["model_file"].split(".h5")[0]+"_val.log"), 
-                          ['epoch', 'loss', 'acc'])
+    # validate_logger = Logger(model_name=config["model_file"], phase="val", header=['epoch', 'loss', 'acc'])
     
     if config["cuda_devices"] is not None:
         model = model.cuda()
@@ -86,24 +86,26 @@ def main():
     optimizer = optim.Adam(parameters, 
                            lr=config["initial_learning_rate"],
                            weight_decay = config["L2_norm"])
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=config["patience"])
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=config["lr_decay"],patience=config["patience"])
     print("training on label:{}".format(config["labels"]))    
     for i in range(config["epochs"]):
         train_epoch(epoch=i, 
                     data_loader=train_loader, 
                     model=model,
+                    model_name=config["model_file"], 
                     criterion=loss_function, 
                     optimizer=optimizer, 
                     opt=config, 
-                    epoch_logger=train_logger, 
-                    batch_logger=train_batch_logger)
+                    epoch_logger=train_logger) 
         
-        val_epoch(epoch=i, 
+        val_loss = val_epoch(epoch=i, 
                   data_loader=valildation_loader, 
                   model=model, 
                   criterion=loss_function, 
-                  opt=config, 
-                  logger=valdate_logger)
+                  opt=config,
+                  optimizer=optimizer, 
+                  logger=train_logger)
+        scheduler.step(val_loss)
         
 if __name__ == '__main__':
     main()

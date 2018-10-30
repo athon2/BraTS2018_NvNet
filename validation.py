@@ -2,11 +2,11 @@ import torch
 from torch.autograd import Variable
 import time
 import sys
-
+from tqdm import tqdm
 from utils import AverageMeter, calculate_accuracy
 
 
-def val_epoch(epoch, data_loader, model, criterion, opt, logger):
+def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
     print('validation at epoch {}'.format(epoch))
 
     model.eval()
@@ -16,8 +16,9 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
     losses = AverageMeter()
     accuracies = AverageMeter()
 
-    end_time = time.time()
-    for i, (inputs, targets) in enumerate(data_loader):
+    start_time = time.time()
+    end_time = start_time
+    for i, (inputs, targets) in enumerate(tqdm(data_loader)):
         data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
@@ -37,19 +38,13 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         batch_time.update(time.time() - end_time)
         end_time = time.time()
 
-#        print('Epoch: [{0}][{1}/{2}]\t'
-#              'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-#              'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-#              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-#              'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
-#                  epoch,
-#                  i + 1,
-#                  len(data_loader),
-#                  batch_time=batch_time,
-#                  data_time=data_time,
-#                  loss=losses,
-#                  acc=accuracies))
 
-    logger.log({'epoch': epoch, 'loss': losses.avg, 'acc': accuracies.avg})
-
+    epoch_time = time.time() - start_time
+    print("validation: epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} minutes".format(epoch, accuracies.avg, epoch_time / 60))
+    logger.log(phase="val",values={
+        'epoch': epoch,
+        'loss': format(losses.avg.item(), '.4f'),
+        'acc': format(accuracies.avg.item(), '.4f'),
+        'lr': optimizer.param_groups[0]['lr']
+    })
     return losses.avg

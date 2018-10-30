@@ -3,12 +3,13 @@ from torch.autograd import Variable
 import time
 import os
 import sys
+from tqdm import tqdm
 
 from utils import AverageMeter, calculate_accuracy
 
 
-def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
-                epoch_logger, batch_logger):
+def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt,
+                epoch_logger):
     print('train at epoch {}'.format(epoch))
 
     model.train()
@@ -20,7 +21,10 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
 
     start_time = time.time()
     end_time = start_time
-    for i, (inputs, targets) in enumerate(data_loader):
+    training_process = tqdm(data_loader)
+    for i, (inputs, targets) in enumerate(training_process):
+        if i > 0:
+            training_process.set_description("Loss: %.4f, Acc: %.4f"%(losses.avg.item(), accuracies.avg.item()))
         data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
@@ -29,7 +33,6 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
             targets = targets.type(torch.FloatTensor)
             targets = targets.cuda()
         outputs, distr = model(inputs)
-        # import pdb;pdb.set_trace()
         loss = criterion(outputs, targets, distr)
         
         acc = calculate_accuracy(outputs.cpu(), targets.cpu())
@@ -43,39 +46,19 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         batch_time.update(time.time() - end_time)
         end_time = time.time()
 
-        batch_logger.log({
-            'epoch': epoch,
-            'batch': i + 1,
-            'iter': (epoch - 1) * len(data_loader) + (i + 1),
-            'loss': losses.val,
-            'acc': accuracies.val,
-            'lr': optimizer.param_groups[0]['lr']
-        })
-
-#         print('Epoch: [{0}][{1}/{2}]\t'
-#               'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-#               'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-#               'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-#               'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
-#                   epoch,
-#                   i + 1,
-#                   len(data_loader),
-#                   batch_time=batch_time,
-#                   data_time=data_time,
-#                   loss=losses,
-#                   acc=accuracies))
-
-    epoch_logger.log({
+    epoch_logger.log(phase="train",values={
         'epoch': epoch,
-        'loss': losses.avg,
-        'acc': accuracies.avg,
+        'loss': format(losses.avg.item(), '.4f'),
+        'acc': format(accuracies.avg.item(), '.4f'),
         'lr': optimizer.param_groups[0]['lr']
     })
     epoch_time = time.time() - start_time
-    print("Epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} hours".format(epoch, accuracies.avg, epoch_time / 3600))
+    # print("training: epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} minutes".format(epoch, accuracies.avg, epoch_time / 60))
     if epoch % opt["checkpoint"] == 0:
-        save_file_path = os.path.join(opt["result_path"],
-                                      'save_{}.pth'.format(epoch))
+        save_dir = os.path.join(opt["result_path"], model_name.split("/")[-1].split(".h5")[0])
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_file_path = os.path.join(save_dir,'save_{}.pth'.format(epoch))
         states = {
             'epoch': epoch + 1,
 #            'arch': opt.arch,

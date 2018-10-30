@@ -5,6 +5,10 @@ __pycache__
 # custom
 resnet.py
 test_script.py
-checkpoint_models/*.pth
+checkpoint_models/*
+runs/*
 isensee_mixed*
 *.log
+
+# not ignore
+!.gitkeep

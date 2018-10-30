@@ -51,6 +51,6 @@ class CombinedLoss(_Loss):
         l2_loss = self.l2_loss(vae_pred, vae_truth)
         kl_div = self.kl_loss(est_mean, est_std)
         combined_loss = dice_loss + self.k1 * l2_loss + self.k2 * kl_div
-        print("dice_loss:%.4f, L2_loss:%.4f, KL_div:%.4f, combined_loss:%.4f"%(dice_loss,l2_loss,kl_div,combined_loss))
+        #print("dice_loss:%.4f, L2_loss:%.4f, KL_div:%.4f, combined_loss:%.4f"%(dice_loss,l2_loss,kl_div,combined_loss))
         
         return combined_loss

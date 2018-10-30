@@ -160,5 +160,6 @@ class BratsDataset(Dataset):
         return input_data, final_label
     
     def __len__(self):
+        #return 1
         return len(self.data_list)
     
