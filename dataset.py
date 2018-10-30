@@ -116,7 +116,7 @@ class BratsDataset(Dataset):
         affine = self.data_file.root.affine[item]
         # dimessions of data
         n_dim = len(seg_label[0].shape)
-        #print("n_dim:",n_dim)
+
         if self.phase == "train":
             if self.config["random_offset"] is not None:
                 offset_factor = -0.25 + np.random.random(n_dim)
@@ -154,12 +154,10 @@ class BratsDataset(Dataset):
         elif self.phase == "test":
             pass
         # Concatenate to (5, 128, 128, 128) as network output
-        # print("input_data, seg_label",input_data.shape, seg_label.shape)
         final_label = np.concatenate((seg_label, input_data), axis=0)
         
         return input_data, final_label
     
     def __len__(self):
-        #return 1
         return len(self.data_list)
     

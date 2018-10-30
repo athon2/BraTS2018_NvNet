@@ -68,7 +68,7 @@ def main():
                                                shuffle=True, 
                                                pin_memory=True)
     valildation_data = BratsDataset(phase="validate", config=config)
-    valildation_loader = torch.utils.data.DataLoader(dataset=training_data, 
+    valildation_loader = torch.utils.data.DataLoader(dataset=valildation_data, 
                                                batch_size=config["batch_size"], 
                                                shuffle=False, 
                                                pin_memory=True)
