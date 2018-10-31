@@ -14,13 +14,10 @@ def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt
 
     model.train()
 
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
     losses = AverageMeter()
     accuracies = AverageMeter()
 
     start_time = time.time()
-    end_time = start_time
     training_process = tqdm(data_loader)
     for i, (inputs, targets) in enumerate(training_process):
         if i > 0:
@@ -42,9 +39,6 @@ def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        batch_time.update(time.time() - end_time)
-        end_time = time.time()
 
     epoch_logger.log(phase="train",values={
         'epoch': epoch,

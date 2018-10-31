@@ -76,17 +76,27 @@ def load_value_file(file_path):
 def calculate_accuracy(outputs, targets):
     return dice_coefficient(outputs, targets)
 
-def dice_coefficient(outputs, targets, eps=1e-8):
+def dice_coefficient(outputs, targets, threshold=0.5, eps=1e-8):
     batch_size = targets.size(0)
     y_pred = outputs[:,0,:,:,:]
     y_truth = targets[:,0,:,:,:]
-
+    y_pred = y_pred > threshold
+    y_pred = y_pred.type(torch.FloatTensor)
     intersection = torch.sum(torch.mul(y_pred, y_truth)) + eps
     union = torch.sum(y_pred) + torch.sum(y_truth) + eps
     dice = 2 * intersection / union 
     
     return dice / batch_size
+
+def load_old_model(model, optimizer, saved_model_path):
+    print("Constructing model from saved file... ")
+    checkpoint = torch.load(saved_model_path)
+    epoch = checkpoint["epoch"]
+    model.load_state_dict(checkpoint["state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
     
+    return model, epoch, optimizer 
+
 def normalize_data(data, mean, std):
     pass
     

@@ -11,13 +11,10 @@ def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
 
     model.eval()
 
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
     losses = AverageMeter()
     accuracies = AverageMeter()
 
     start_time = time.time()
-    end_time = start_time
     for i, (inputs, targets) in enumerate(tqdm(data_loader)):
         data_time.update(time.time() - end_time)
 
@@ -34,10 +31,6 @@ def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
 
         losses.update(loss.cpu(), inputs.size(0))
         accuracies.update(acc, inputs.size(0))
-
-        batch_time.update(time.time() - end_time)
-        end_time = time.time()
-
 
     epoch_time = time.time() - start_time
     print("validation: epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} minutes".format(epoch, accuracies.avg, epoch_time / 60))

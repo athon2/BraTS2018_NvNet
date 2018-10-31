@@ -10,7 +10,7 @@ from torch import optim
 from torch.optim import lr_scheduler
 
 from tqdm import tqdm
-from utils import Logger
+from utils import Logger,load_old_model
 from train import train_epoch
 from validation import val_epoch
 from nvnet import NvNet
@@ -38,28 +38,28 @@ config["result_path"] = "./checkpoint_models/"
 config["data_file"] = os.path.abspath("isensee_mixed_brats_data.h5")
 config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
+config["saved_model_file"] = os.path.abspath("./checkpoint_models/single_label_2_flip/save_9.pth")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 config["L2_norm"] = 1e-5
 config["patience"] = 0
 config["lr_decay"] = 0.9
-config["epochs"] = 100
-config["checkpoint"] = 3
+config["epochs"] = 300
+config["checkpoint"] = 1
 config["label_containing"] = True
-def load_old_model(model_path):
-    pass
 
 
 def main():
     # init or load model
-    print("init model")
-    print("input shape:",config["input_shape"])
-    if not config["overwrite"] and os.path.exists(config["model_file"]):
-        model = load_old_model(config["model_file"])
-    else:
-        model = NvNet(input_shape=config["input_shape"], seg_outChans=config["n_labels"])
-    
+    print("init model with input shape",config["input_shape"])
+    model = NvNet(input_shape=config["input_shape"], seg_outChans=config["n_labels"])
     parameters = model.parameters()
+    optimizer = optim.Adam(parameters, 
+                           lr=config["initial_learning_rate"],
+                           weight_decay = config["L2_norm"])
+    start_epoch = 1
+  
     loss_function = CombinedLoss(k1=config["loss_k1_weight"], k2=config["loss_k2_weight"])
+    
     # data_generator
     print("data generating")
     training_data = BratsDataset(phase="train", config=config)
@@ -74,21 +74,19 @@ def main():
                                                pin_memory=True)
     
     train_logger = Logger(model_name=config["model_file"],header=['epoch', 'loss', 'acc', 'lr'])
-    # train_batch_logger = Logger(os.path.join("./logs/", config["model_file"].split(".h5")[0]+"_batch.log"), 
-    #                      ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
-    
-    # validate_logger = Logger(model_name=config["model_file"], phase="val", header=['epoch', 'loss', 'acc'])
-    
+
     if config["cuda_devices"] is not None:
         model = model.cuda()
         loss_function = loss_function.cuda()
         
-    optimizer = optim.Adam(parameters, 
-                           lr=config["initial_learning_rate"],
-                           weight_decay = config["L2_norm"])
+    if not config["overwrite"] and os.path.exists(config["model_file"]) or os.path.exists(config["saved_model_file"]):
+        model, start_epoch, optimizer = load_old_model(model, optimizer, saved_model_path=config["saved_model_file"])
+    
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=config["lr_decay"],patience=config["patience"])
+    
+
     print("training on label:{}".format(config["labels"]))    
-    for i in range(config["epochs"]):
+    for i in range(start_epoch,config["epochs"]):
         train_epoch(epoch=i, 
                     data_loader=train_loader, 
                     model=model,
