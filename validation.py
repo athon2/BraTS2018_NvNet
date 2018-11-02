@@ -16,7 +16,6 @@ def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
 
     start_time = time.time()
     for i, (inputs, targets) in enumerate(tqdm(data_loader)):
-        data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
             #targets = targets.cuda(async=True)
@@ -26,7 +25,7 @@ def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
             targets = targets.cuda()
         with torch.no_grad():
             outputs, distr = model(inputs)
-        loss = criterion(outputs.cpu(), targets.cpu(), distr.cpu())
+        loss = criterion(outputs, targets, distr)
         acc = calculate_accuracy(outputs.cpu(), targets.cpu())
 
         losses.update(loss.cpu(), inputs.size(0))

@@ -22,7 +22,6 @@ def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt
     for i, (inputs, targets) in enumerate(training_process):
         if i > 0:
             training_process.set_description("Loss: %.4f, Acc: %.4f"%(losses.avg.item(), accuracies.avg.item()))
-        data_time.update(time.time() - end_time)
 
         if opt["cuda_devices"] is not None:
             inputs = inputs.type(torch.FloatTensor)

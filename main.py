@@ -38,11 +38,11 @@ config["result_path"] = "./checkpoint_models/"
 config["data_file"] = os.path.abspath("isensee_mixed_brats_data.h5")
 config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
-config["saved_model_file"] = os.path.abspath("./checkpoint_models/single_label_2_flip/save_9.pth")
+config["saved_model_file"] = os.path.abspath("./checkpoint_models/single_label_2_flip/save_28.pth")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 config["L2_norm"] = 1e-5
 config["patience"] = 0
-config["lr_decay"] = 0.9
+config["lr_decay"] = 0.5
 config["epochs"] = 300
 config["checkpoint"] = 1
 config["label_containing"] = True
@@ -70,7 +70,7 @@ def main():
     valildation_data = BratsDataset(phase="validate", config=config)
     valildation_loader = torch.utils.data.DataLoader(dataset=valildation_data, 
                                                batch_size=config["batch_size"], 
-                                               shuffle=False, 
+                                               shuffle=True, 
                                                pin_memory=True)
     
     train_logger = Logger(model_name=config["model_file"],header=['epoch', 'loss', 'acc', 'lr'])
@@ -84,7 +84,6 @@ def main():
     
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=config["lr_decay"],patience=config["patience"])
     
-
     print("training on label:{}".format(config["labels"]))    
     for i in range(start_epoch,config["epochs"]):
         train_epoch(epoch=i, 
