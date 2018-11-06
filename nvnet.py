@@ -201,14 +201,14 @@ class VAE(nn.Module):
         return out, distr
 
 class NvNet(nn.Module):
-    def __init__(self,
+    def __init__(self,config,
                 input_shape = (1, 4, 160, 192, 128), 
                 seg_outChans = 1, 
                 activation="relu", 
                 normalizaiton="group_normalization", 
                 mode="trilinear"):
         super(NvNet, self).__init__()
-        
+        self.config = config
         # some critical parameters
         self.inChans = input_shape[1]
         self.dense_features = (input_shape[2]//16, input_shape[3]//16,input_shape[4]//16)
@@ -238,7 +238,8 @@ class NvNet(nn.Module):
         self.de_end = OutputTransition(32, seg_outChans)
         
         # Variational Auto-Encoder
-        self.vae = VAE(256, outChans=self.inChans, dense_features=self.dense_features)
+        if self.config["VAE_enable"]:
+            self.vae = VAE(256, outChans=self.inChans, dense_features=self.dense_features)
 
     def forward(self, x):
         out_init = self.in_conv0(x)
@@ -255,7 +256,9 @@ class NvNet(nn.Module):
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
         out_end = self.de_end(out_de0)
-        out_vae, out_distr = self.vae(out_en3)
-        out_final = torch.cat((out_end, out_vae), 1)
-
-        return out_final, out_distr
+        if self.config["VAE_enable"]:
+            out_vae, out_distr = self.vae(out_en3)
+            out_final = torch.cat((out_end, out_vae), 1)
+            return out_final, out_distr
+        
+        return out_end

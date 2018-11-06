@@ -28,9 +28,12 @@ def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt
             inputs = inputs.cuda()
             targets = targets.type(torch.FloatTensor)
             targets = targets.cuda()
-        outputs, distr = model(inputs)
-        loss = criterion(outputs, targets, distr)
-        
+        if opt["VAE_enable"]:
+            outputs, distr = model(inputs)
+            loss = criterion(outputs, targets, distr)
+        else:
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
         acc = calculate_accuracy(outputs.cpu(), targets.cpu())
         losses.update(loss.cpu(), inputs.size(0))
         accuracies.update(acc, inputs.size(0))

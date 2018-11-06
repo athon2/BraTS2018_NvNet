@@ -153,11 +153,15 @@ class BratsDataset(Dataset):
                 seg_label = seg_label[np.newaxis]
         elif self.phase == "test":
             pass
-        # Concatenate to (5, 128, 128, 128) as network output
-        final_label = np.concatenate((seg_label, input_data), axis=0)
+        if self.config["VAE_enable"]:
+            # Concatenate to (5, 128, 128, 128) as network output
+            final_label = np.concatenate((seg_label, input_data), axis=0)
+        else:
+            final_label = seg_label
         
         return input_data, final_label
     
     def __len__(self):
         return len(self.data_list)
+        # return 1
     

@@ -24,8 +24,13 @@ def val_epoch(epoch, data_loader, model, criterion, optimizer, opt, logger):
             targets = targets.type(torch.FloatTensor)
             targets = targets.cuda()
         with torch.no_grad():
-            outputs, distr = model(inputs)
-        loss = criterion(outputs, targets, distr)
+            if opt["VAE_enable"]:
+                outputs, distr = model(inputs)
+                loss = criterion(outputs, targets, distr)
+            else:
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+
         acc = calculate_accuracy(outputs.cpu(), targets.cpu())
 
         losses.update(loss.cpu(), inputs.size(0))
