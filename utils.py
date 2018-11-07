@@ -82,7 +82,7 @@ def dice_coefficient(outputs, targets, threshold=0.5, eps=1e-8):
     y_truth = targets[:,0,:,:,:]
     y_pred = y_pred > threshold
     y_pred = y_pred.type(torch.FloatTensor)
-    intersection = torch.sum(torch.mul(y_pred, y_truth)) + eps
+    intersection = torch.sum(torch.mul(y_pred, y_truth)) + eps/2
     union = torch.sum(y_pred) + torch.sum(y_truth) + eps
     dice = 2 * intersection / union 
     
