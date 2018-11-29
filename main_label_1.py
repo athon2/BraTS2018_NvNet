@@ -18,7 +18,8 @@ from metrics import CombinedLoss, SoftDiceLoss
 from dataset import BratsDataset
 config = dict()
 config["cuda_devices"] = True
-config["labels"] = (1,)
+config["labels_type"] = (1, 2, 4)
+config["labels"] = config["labels_type"][1] # Choose label to training
 config["model_file"] = os.path.abspath("single_label_{}_dice.h5".format(config["labels"][0]))
 config["initial_learning_rate"] = 1e-5
 config["batch_size"] = 1
@@ -83,9 +84,10 @@ def main():
         model = model.cuda()
         loss_function = loss_function.cuda()
         
-    # if not config["overwrite"] and os.path.exists(config["model_file"]) or os.path.exists(config["saved_model_file"]):
-    #    model, start_epoch, optimizer = load_old_model(model, optimizer, saved_model_path=config["saved_model_file"])
-    
+    if not config["overwrite"] and config["saved_model_file"] is not None:
+        if not os.path.exists(config["saved_model_file"]):
+            raise Exception("Invalid model path!")
+        model, start_epoch, optimizer = load_old_model(model, optimizer, saved_model_path=config["saved_model_file"])    
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=config["lr_decay"],patience=config["patience"])
     
     print("training on label:{}".format(config["labels"]))    
