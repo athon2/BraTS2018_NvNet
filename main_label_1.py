@@ -18,14 +18,16 @@ from metrics import CombinedLoss, SoftDiceLoss
 from dataset import BratsDataset
 config = dict()
 config["cuda_devices"] = True
-config["labels_type"] = (1, 2, 4)
-config["labels"] = config["labels_type"][1] # Choose label to training
+# config["labels"] = (1, 2, 4)
+config["labels"] = (1,) # change label to train
 config["model_file"] = os.path.abspath("single_label_{}_dice.h5".format(config["labels"][0]))
 config["initial_learning_rate"] = 1e-5
 config["batch_size"] = 1
 config["validation_batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
-# config["labels"] = (1, 2, 4)
+config["activation"] = "relu"
+config["normalizaiton"] = "group_normalization"
+config["mode"] = "trilinear"
 config["n_labels"] = len(config["labels"])
 config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
@@ -33,29 +35,29 @@ config["nb_channels"] = len(config["training_modalities"])
 config["input_shape"] = tuple([config["batch_size"]] + [config["nb_channels"]] + list(config["image_shape"]))
 config["loss_k1_weight"] = 0.1
 config["loss_k2_weight"] = 0.1
-config["random_offset"] = True
-config["random_flip"] = True  # augments the data by randomly flipping an axis during generating a data
+config["random_offset"] = True # Boolean. Augments the data by randomly move an axis during generating a data
+config["random_flip"] = True  # Boolean. Augments the data by randomly flipping an axis during generating a data
 # config["permute"] = True  # data shape must be a cube. Augments the data by permuting in various directions
 config["result_path"] = "./checkpoint_models/"
 config["data_file"] = os.path.abspath("isensee_mixed_brats_data.h5")
 config["training_file"] = os.path.abspath("isensee_mixed_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
-# config["saved_model_file"] = os.path.abspath("./checkpoint_models/single_label_2_flip/save_55.pth")
+config["test_file"] = os.path.abspath("isensee_mixed_validation_ids.pkl")
 config["saved_model_file"] = None
-config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
+config["overwrite"] = False  # If True, will create new files. If False, will use previously written files.
 config["L2_norm"] = 1e-5
 config["patience"] = 2
 config["lr_decay"] = 0.7
 config["epochs"] = 300
-config["checkpoint"] = 1
-config["label_containing"] = True
-config["VAE_enable"] = False
+config["checkpoint"] = 1  # determine the checkpoint interval
+config["label_containing"] = True  # Boolean. If True, will generate label with overlapping.
+config["VAE_enable"] = False  # Boolean. If True, will enable the VAE module.
 
 
 def main():
     # init or load model
     print("init model with input shape",config["input_shape"])
-    model = NvNet(config=config,input_shape=config["input_shape"], seg_outChans=config["n_labels"])
+    model = NvNet(config=config)
     parameters = model.parameters()
     optimizer = optim.Adam(parameters, 
                            lr=config["initial_learning_rate"],
@@ -68,19 +70,13 @@ def main():
     # data_generator
     print("data generating")
     training_data = BratsDataset(phase="train", config=config)
-    # train_loader = torch.utils.data.DataLoader(dataset=training_data, 
-                                               # batch_size=config["batch_size"], 
-                                               # shuffle=True, 
-                                               # pin_memory=True)
     valildation_data = BratsDataset(phase="validate", config=config)
-    # valildation_loader = torch.utils.data.DataLoader(dataset=valildation_data, 
-                                               # batch_size=config["batch_size"], 
-                                               # shuffle=True, 
-                                               # pin_memory=True)
+
     
     train_logger = Logger(model_name=config["model_file"],header=['epoch', 'loss', 'acc', 'lr'])
 
     if config["cuda_devices"] is not None:
+        # model = nn.DataParallel(model)  # multi-gpu training
         model = model.cuda()
         loss_function = loss_function.cuda()
         

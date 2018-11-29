@@ -3,12 +3,12 @@ __pycache__
 *.ipynb*
 
 # custom
-resnet.py
 test_script.py
 checkpoint_models/*
 runs/*
 isensee_mixed*
 *.log
+main_label_*.py
 
 # not ignore
 !.gitkeep

@@ -117,61 +117,58 @@ class BratsDataset(Dataset):
         if self.data_file is not None:
             self.data_file.close()
             self.data_file = None
-        
+            
+    def get_affine(self):
+        return self.affine
+    
     def __getitem__(self, index):
         item = self.data_list[index]
         input_data = self.data_file.root.data[item] # data shape:(4, 128, 128, 128)
         label_data = self.data_file.root.truth[item] # truth shape:(1, 128, 128, 128)
         seg_label = get_target_label(label_data, self.config)
-        affine = self.data_file.root.affine[item]
+        self.affine = self.data_file.root.affine[item]
         # dimessions of data
         n_dim = len(seg_label[0].shape)
 
         if self.phase == "train":
-            if self.config["random_offset"] is not None:
+            if self.config["random_offset"]:
                 offset_factor = -0.25 + np.random.random(n_dim)
             else:
                 offset_factor = None
-            if self.config["random_flip"] is not None:
+            if self.config["random_flip"]:
                 flip_axis = random_flip_dimensions(n_dim)
             else:
                 flip_axis = None 
-            # Apply random offset and flip to each channel according to randomly generated offset factor and flip axis respectively.
-            data_list = list()
-            for data_channel in range(input_data.shape[0]):
-                # Transform ndarray data to Nifti1Image
-                channel_image = nib.Nifti1Image(dataobj=input_data[data_channel], affine=affine)
-                data_list.append(resample_to_img(augment_image(channel_image, flip_axis=flip_axis, offset_factor=offset_factor), channel_image, interpolation="continuous").get_data())
-            input_data = np.asarray(data_list)
-            # Transform ndarray segmentation label to Nifti1Image
-            seg_image = nib.Nifti1Image(dataobj=seg_label[0], affine=affine)
-            seg_label = resample_to_img(augment_image(seg_image, flip_axis=flip_axis, offset_factor=offset_factor), seg_image, interpolation="nearest").get_data()
-            seg_label = seg_label[np.newaxis]
-        elif self.phase == "validate":
-            data_list = list()
+                
+        elif self.phase == "validate" or self.phase == "test":
             offset_factor = None
             flip_axis = None
-            for data_channel in range(input_data.shape[0]):
-                # Transform ndarray data to Nifti1Image
-                channel_image = nib.Nifti1Image(dataobj=input_data[data_channel], affine=affine)
-                data_list.append(resample_to_img(augment_image(channel_image, flip_axis=flip_axis, offset_factor=offset_factor), channel_image, interpolation="continuous").get_data())
-            input_data = np.asarray(data_list)
-            # Transform ndarray segmentation label to Nifti1Image
-            seg_image = nib.Nifti1Image(dataobj=seg_label[0], affine=affine)
-            seg_label = resample_to_img(augment_image(seg_image, flip_axis=flip_axis, offset_factor=offset_factor), seg_image, interpolation="nearest").get_data()
-            if len(seg_label.shape) == 3:
-                seg_label = seg_label[np.newaxis]
-        elif self.phase == "test":
-            pass
+        
+        # Apply random offset and flip to each channel according to randomly generated offset factor and flip axis respectively.
+        data_list = list()
+        for data_channel in range(input_data.shape[0]):
+            # Transform ndarray data to Nifti1Image
+            channel_image = nib.Nifti1Image(dataobj=input_data[data_channel], affine=self.affine)
+            data_list.append(resample_to_img(augment_image(channel_image, flip_axis=flip_axis, offset_factor=offset_factor), channel_image, interpolation="continuous").get_data())
+        input_data = np.asarray(data_list)
+        # Transform ndarray segmentation label to Nifti1Image
+        seg_image = nib.Nifti1Image(dataobj=seg_label[0], affine=self.affine)
+        seg_label = resample_to_img(augment_image(seg_image, flip_axis=flip_axis, offset_factor=offset_factor), seg_image, interpolation="nearest").get_data()
+        if len(seg_label.shape) == 3:
+            seg_label = seg_label[np.newaxis]
+            
         if self.config["VAE_enable"]:
             # Concatenate to (5, 128, 128, 128) as network output
             final_label = np.concatenate((seg_label, input_data), axis=0)
         else:
             final_label = seg_label
+            
+        if self.phase == "test":
+            subject_id = np.array(self.data_file.root.subject_ids[item].decode('utf-8'), dtype=str())[0]
+            return input_data, final_label, subject_id
         
         return input_data, final_label
     
     def __len__(self):
         return len(self.data_list)
-        # return 2
     

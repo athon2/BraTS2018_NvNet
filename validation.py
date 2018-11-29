@@ -53,4 +53,4 @@ def val_epoch(epoch, data_set, model, criterion, optimizer, opt, logger):
         'acc': format(accuracies.avg.item(), '.4f'),
         'lr': optimizer.param_groups[0]['lr']
     })
-    return losses.avg
+    return losses.avg, accuracies.avg

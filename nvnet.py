@@ -4,18 +4,25 @@ import torch.nn.functional as F
 
 class DownSampling(nn.Module):
     # 3x3x3 convolution and 1 padding as default
-    def __init__(self, inChans, outChans, stride=2, kernel_size=3, padding=1):
+    def __init__(self, inChans, outChans, stride=2, kernel_size=3, padding=1, dropout_rate=None):
         super(DownSampling, self).__init__()
         
+        self.dropout_flag = False
         self.conv1 = nn.Conv3d(in_channels=inChans, 
                      out_channels=outChans, 
                      kernel_size=kernel_size, 
                      stride=stride,
                      padding=padding,
                      bias=False)
-        
+        if dropout_rate is not None:
+            self.dropout_flag = True
+            self.dropout = nn.Dropout3d(dropout_rate,inplace=True)
+            
     def forward(self, x):
-        return self.conv1(x)
+        out = self.conv1(x)
+        if self.dropout_flag:
+            out = self.dropout(out)
+        return out
     
 class EncoderBlock(nn.Module):
     '''
@@ -30,6 +37,9 @@ class EncoderBlock(nn.Module):
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
+        elif activation == "elu":
+            self.actv1 = nn.ELU(inplace=True)
+            self.actv2 = nn.ELU(inplace=True)
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         self.conv2 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         
@@ -84,6 +94,9 @@ class DecoderBlock(nn.Module):
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
+        elif activation == "elu":
+            self.actv1 = nn.ELU(inplace=True)
+            self.actv2 = nn.ELU(inplace=True)            
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         self.conv2 = nn.Conv3d(in_channels=outChans, out_channels=outChans, kernel_size=3, stride=stride, padding=padding)
         
@@ -130,6 +143,9 @@ class VDResampling(nn.Module):
         if activation == "relu":
             self.actv1 = nn.ReLU(inplace=True)
             self.actv2 = nn.ReLU(inplace=True)
+        elif activation == "elu":
+            self.actv1 = nn.ELU(inplace=True)
+            self.actv2 = nn.ELU(inplace=True)
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
         self.dense1 = nn.Linear(in_features=16*dense_features[0]*dense_features[1]*dense_features[2], out_features=inChans)
         self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*dense_features[0]*dense_features[1]*dense_features[2])
@@ -201,44 +217,45 @@ class VAE(nn.Module):
         return out, distr
 
 class NvNet(nn.Module):
-    def __init__(self,config,
-                input_shape = (1, 4, 160, 192, 128), 
-                seg_outChans = 1, 
-                activation="relu", 
-                normalizaiton="group_normalization", 
-                mode="trilinear"):
+    def __init__(self, config):
         super(NvNet, self).__init__()
+        
         self.config = config
         # some critical parameters
-        self.inChans = input_shape[1]
-        self.dense_features = (input_shape[2]//16, input_shape[3]//16,input_shape[4]//16)
+        self.inChans = config["input_shape"][1]
+        self.input_shape = config["input_shape"]
+        self.seg_outChans = config["n_labels"]
+        self.activation = config["activation"]
+        self.normalizaiton = config["normalizaiton"]
+        self.mode = config["mode"]
         
         # Encoder Blocks
-        self.in_conv0 = DownSampling(inChans=self.inChans, outChans=32, stride=1)
-        self.en_block0 = EncoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
+        self.in_conv0 = DownSampling(inChans=self.inChans, outChans=32, stride=1,dropout_rate=0.2)
+        self.en_block0 = EncoderBlock(32, 32, activation=self.activation, normalizaiton=self.normalizaiton)
         self.en_down1 = DownSampling(32, 64)
-        self.en_block1_0 = EncoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
-        self.en_block1_1 = EncoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
+        self.en_block1_0 = EncoderBlock(64, 64, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.en_block1_1 = EncoderBlock(64, 64, activation=self.activation, normalizaiton=self.normalizaiton)
         self.en_down2 = DownSampling(64, 128)
-        self.en_block2_0 = EncoderBlock(128, 128, activation=activation, normalizaiton=normalizaiton)
-        self.en_block2_1 = EncoderBlock(128, 128, activation=activation, normalizaiton=normalizaiton)
+        self.en_block2_0 = EncoderBlock(128, 128, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.en_block2_1 = EncoderBlock(128, 128, activation=self.activation, normalizaiton=self.normalizaiton)
         self.en_down3 = DownSampling(128, 256)
-        self.en_block3_0 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
-        self.en_block3_1 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
-        self.en_block3_2 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
-        self.en_block3_3 = EncoderBlock(256, 256, activation=activation, normalizaiton=normalizaiton)
+        self.en_block3_0 = EncoderBlock(256, 256, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.en_block3_1 = EncoderBlock(256, 256, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.en_block3_2 = EncoderBlock(256, 256, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.en_block3_3 = EncoderBlock(256, 256, activation=self.activation, normalizaiton=self.normalizaiton)
         
         # Decoder Blocks
-        self.de_up2 =  LinearUpSampling(256, 128, mode=mode)
-        self.de_block2 = DecoderBlock(128, 128, activation=activation, normalizaiton=normalizaiton)
-        self.de_up1 =  LinearUpSampling(128, 64, mode=mode)
-        self.de_block1 = DecoderBlock(64, 64, activation=activation, normalizaiton=normalizaiton)
-        self.de_up0 =  LinearUpSampling(64, 32, mode=mode)
-        self.de_block0 = DecoderBlock(32, 32, activation=activation, normalizaiton=normalizaiton)
-        self.de_end = OutputTransition(32, seg_outChans)
+        self.de_up2 =  LinearUpSampling(256, 128, mode=self.mode)
+        self.de_block2 = DecoderBlock(128, 128, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.de_up1 =  LinearUpSampling(128, 64, mode=self.mode)
+        self.de_block1 = DecoderBlock(64, 64, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.de_up0 =  LinearUpSampling(64, 32, mode=self.mode)
+        self.de_block0 = DecoderBlock(32, 32, activation=self.activation, normalizaiton=self.normalizaiton)
+        self.de_end = OutputTransition(32, self.seg_outChans)
         
         # Variational Auto-Encoder
         if self.config["VAE_enable"]:
+            self.dense_features = (self.input_shape[2]//16, self.input_shape[3]//16, self.input_shape[4]//16)
             self.vae = VAE(256, outChans=self.inChans, dense_features=self.dense_features)
 
     def forward(self, x):
@@ -251,11 +268,12 @@ class NvNet(nn.Module):
                 self.en_block3_1(
                     self.en_block3_0(
                         self.en_down3(out_en2)))))
-
+        
         out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
         out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
         out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
         out_end = self.de_end(out_de0)
+        
         if self.config["VAE_enable"]:
             out_vae, out_distr = self.vae(out_en3)
             out_final = torch.cat((out_end, out_vae), 1)
