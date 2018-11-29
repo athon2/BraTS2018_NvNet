@@ -8,17 +8,23 @@ from tqdm import tqdm
 from utils import AverageMeter, calculate_accuracy
 
 
-def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt,
+def train_epoch(epoch, data_set, model, model_name, criterion, optimizer, opt,
                 epoch_logger):
     print('train at epoch {}'.format(epoch))
-
+    
     model.train()
 
     losses = AverageMeter()
     accuracies = AverageMeter()
-
+    
+    
+    data_set.file_open()
+    train_loader = torch.utils.data.DataLoader(dataset=data_set, 
+                                               batch_size=opt["batch_size"], 
+                                               shuffle=True, 
+                                               pin_memory=True)
     start_time = time.time()
-    training_process = tqdm(data_loader)
+    training_process = tqdm(train_loader)
     for i, (inputs, targets) in enumerate(training_process):
         if i > 0:
             training_process.set_description("Loss: %.4f, Acc: %.4f"%(losses.avg.item(), accuracies.avg.item()))
@@ -50,6 +56,7 @@ def train_epoch(epoch, data_loader, model, model_name, criterion, optimizer, opt
     })
     epoch_time = time.time() - start_time
     # print("training: epoch:{0}\t seg_acc:{1:.4f} \t using:{2:.3f} minutes".format(epoch, accuracies.avg, epoch_time / 60))
+    data_set.file_close()
     if epoch % opt["checkpoint"] == 0:
         save_dir = os.path.join(opt["result_path"], model_name.split("/")[-1].split(".h5")[0])
         if not os.path.exists(save_dir):

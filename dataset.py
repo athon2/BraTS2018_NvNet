@@ -97,7 +97,8 @@ class BratsDataset(Dataset):
         
         self.config = config
         self.phase = phase
-        self.data_file = open_data_file(config["data_file"])
+        self.data_name = config["data_file"]
+        
         if phase == "train":
             self.data_ids = config["training_file"]
         elif phase == "validate":
@@ -106,7 +107,16 @@ class BratsDataset(Dataset):
             self.data_ids = config["test_file"]
         
         self.data_list = pickle_load(self.data_ids)
-
+        self.data_file = None
+        
+    def file_open(self):
+        if self.data_file is None:
+            self.data_file = open_data_file(self.data_name)
+        
+    def file_close(self):
+        if self.data_file is not None:
+            self.data_file.close()
+            self.data_file = None
         
     def __getitem__(self, index):
         item = self.data_list[index]
@@ -163,5 +173,5 @@ class BratsDataset(Dataset):
     
     def __len__(self):
         return len(self.data_list)
-        # return 1
+        # return 2
     

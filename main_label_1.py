@@ -22,6 +22,7 @@ config["labels"] = (1,)
 config["model_file"] = os.path.abspath("single_label_{}_dice.h5".format(config["labels"][0]))
 config["initial_learning_rate"] = 1e-5
 config["batch_size"] = 1
+config["validation_batch_size"] = 1
 config["image_shape"] = (128, 128, 128)
 # config["labels"] = (1, 2, 4)
 config["n_labels"] = len(config["labels"])
@@ -66,15 +67,15 @@ def main():
     # data_generator
     print("data generating")
     training_data = BratsDataset(phase="train", config=config)
-    train_loader = torch.utils.data.DataLoader(dataset=training_data, 
-                                               batch_size=config["batch_size"], 
-                                               shuffle=True, 
-                                               pin_memory=True)
+    # train_loader = torch.utils.data.DataLoader(dataset=training_data, 
+                                               # batch_size=config["batch_size"], 
+                                               # shuffle=True, 
+                                               # pin_memory=True)
     valildation_data = BratsDataset(phase="validate", config=config)
-    valildation_loader = torch.utils.data.DataLoader(dataset=valildation_data, 
-                                               batch_size=config["batch_size"], 
-                                               shuffle=True, 
-                                               pin_memory=True)
+    # valildation_loader = torch.utils.data.DataLoader(dataset=valildation_data, 
+                                               # batch_size=config["batch_size"], 
+                                               # shuffle=True, 
+                                               # pin_memory=True)
     
     train_logger = Logger(model_name=config["model_file"],header=['epoch', 'loss', 'acc', 'lr'])
 
@@ -90,7 +91,7 @@ def main():
     print("training on label:{}".format(config["labels"]))    
     for i in range(start_epoch,config["epochs"]):
         train_epoch(epoch=i, 
-                    data_loader=train_loader, 
+                    data_set=training_data, 
                     model=model,
                     model_name=config["model_file"], 
                     criterion=loss_function, 
@@ -99,7 +100,7 @@ def main():
                     epoch_logger=train_logger) 
         
         val_loss = val_epoch(epoch=i, 
-                  data_loader=valildation_loader, 
+                  data_set=valildation_data, 
                   model=model, 
                   criterion=loss_function, 
                   opt=config,
