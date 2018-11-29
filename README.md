@@ -8,4 +8,5 @@ This is an **unofficial** *Pytorch* implementation of BraTS_NvNet, based on **An
 - [x] Loss
 - [x] DataLoader
 - [x] Train
-- [ ] Test
+- [x] Predict
+- [ ] Make Submission
