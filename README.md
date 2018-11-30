@@ -1,4 +1,3 @@
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 # BraTS_NvNet
 
 This is an **unofficial** *Pytorch* implementation of BraTS_NvNet, based on **Andriy Myronenko's** paper on [**MICCAI_BraTS_2018_proceedings_shortPapers**](https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2018_proceedings_shortPapers.pdf)
@@ -105,7 +104,7 @@ nilearn: 0.4.2
   ```
     python3 make_submission.py
   ```
-\mu
+
 ## Implementation Details
 
 - [x] NvNet 
