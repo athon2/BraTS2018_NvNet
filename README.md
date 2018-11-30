@@ -1,9 +1,8 @@
 # BraTS_NvNet
 
 This is an **unofficial** *Pytorch* implementation of BraTS_NvNet, based on **Andriy Myronenko's** paper on [**MICCAI_BraTS_2018_proceedings_shortPapers**](https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2018_proceedings_shortPapers.pdf)
----
 
-## Network
+## Overview
 
 ## Dependencies
 ```
