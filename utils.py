@@ -3,12 +3,9 @@
 @GitHub: https://github.com/athon2
 @Date: 2018-11-30 09:53:44
 '''
-
 import pickle
-import csv
 import torch
 import tensorboardX
-import os 
 
 def pickle_load(in_file):
     with open(in_file, "rb") as opened_file:
@@ -36,30 +33,16 @@ class AverageMeter(object):
 class Logger(object):
 
     def __init__(self, model_name,header):
-        #print("logger init phase",phase)
-        #path = os.path.join("./logs/", model_name.split("/")[-1].split(".h5")[0]+"_{}.log".format(phase))
-        #self.log_file = open(path, 'w')
-        #elf.logger = csv.writer(self.log_file, delimiter=',')
-        #self.logger.writerow(header)
         self.header = header
         self.writer = tensorboardX.SummaryWriter("./runs/"+model_name.split("/")[-1].split(".h5")[0])
 
     def __del(self):
-        #self.log_file.close()
         self.writer.close()
 
     def log(self, phase, values):
-        # write_values = []
-        #for col in self.header:
-        #    assert col in values
-        #    write_values.append(values[col])
-        
-        #self.logger.writerow(write_values)
-        #self.log_file.flush()
         epoch = values['epoch']
         
         for col in self.header[1:]:
-            # import pdb;pdb.set_trace()
             self.writer.add_scalar(phase+"/"+col,float(values[col]),int(epoch))
 
 
@@ -79,6 +62,7 @@ def load_value_file(file_path):
 #    n_correct_elems = correct.float().sum().data[0]
 #
 #    return n_correct_elems / batch_size
+
 def calculate_accuracy(outputs, targets):
     return dice_coefficient(outputs, targets)
 

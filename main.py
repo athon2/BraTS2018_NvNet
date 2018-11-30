@@ -3,24 +3,19 @@
 @GitHub: https://github.com/athon2
 @Date: 2018-11-30 09:53:44
 '''
-
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-import sys
-import json
-import numpy as np
 import torch
 from torch import nn
 from torch import optim
 from torch.optim import lr_scheduler
-
-from tqdm import tqdm
 from utils import Logger,load_old_model
 from train import train_epoch
 from validation import val_epoch
 from nvnet import NvNet
 from metrics import CombinedLoss, SoftDiceLoss
 from dataset import BratsDataset
+
 config = dict()
 config["cuda_devices"] = True
 # config["labels"] = (1, 2, 4)

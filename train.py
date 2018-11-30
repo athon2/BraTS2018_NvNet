@@ -5,9 +5,6 @@
 '''
 import torch
 from torch.autograd import Variable
-import time
-import os
-import sys
 from tqdm import tqdm
 
 from utils import AverageMeter, calculate_accuracy

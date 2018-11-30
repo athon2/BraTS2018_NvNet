@@ -3,11 +3,8 @@
 @GitHub: https://github.com/athon2
 @Date: 2018-11-30 09:53:44
 '''
-
-import os 
 from torch.utils.data import Dataset
 import tables
-import pickle
 import numpy as np
 import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img

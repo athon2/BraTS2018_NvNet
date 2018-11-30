@@ -3,14 +3,11 @@
 @GitHub: https://github.com/athon2
 @Date: 2018-11-30 09:53:44
 '''
-
 import torch
 from torch.autograd import Variable
 import time
-import sys
 from tqdm import tqdm
 from utils import AverageMeter, calculate_accuracy
-
 
 def val_epoch(epoch, data_set, model, criterion, optimizer, opt, logger):
     print('validation at epoch {}'.format(epoch))
