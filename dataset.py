@@ -5,7 +5,6 @@
 '''
 
 import os 
-import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 import tables
 import pickle
