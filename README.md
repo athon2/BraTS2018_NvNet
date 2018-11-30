@@ -72,6 +72,8 @@ numpy: 1.13.1
 tensorboardX: 1.4
 nibabel: 2.3.0
 nilearn: 0.4.2
+tqdm: 4.26.0
+pickle: 0.7.4
 
 ```
 ## Usage
