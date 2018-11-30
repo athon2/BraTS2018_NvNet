@@ -1,3 +1,9 @@
+'''
+@Author: Zhou Kai
+@GitHub: https://github.com/athon2
+@Date: 2018-11-30 09:53:44
+'''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

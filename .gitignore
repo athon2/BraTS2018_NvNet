@@ -1,6 +1,7 @@
 # general 
 __pycache__
 *.ipynb*
+.vscode
 
 # custom
 test_script.py

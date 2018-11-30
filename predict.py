@@ -1,3 +1,9 @@
+'''
+@Author: Zhou Kai
+@GitHub: https://github.com/athon2
+@Date: 2018-11-30 09:53:44
+'''
+
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import numpy as np
