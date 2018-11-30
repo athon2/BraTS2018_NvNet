@@ -65,23 +65,24 @@ sample ~ ![sample](./doc/sample_N.gif)
 
 1. The loss function consists of 3 terms:
 
-  ![loss](./doc/combined_Loss.gif)
+      ![loss](./doc/combined_Loss.gif)
+  
   
 2. ![L_dice](./doc/L_dice.gif) is applied to the decoder output ![p_pred](./doc/p_pred.gif) to match the segmentation mask ![p_true](./doc/p_true.gif) :
 
-  ![soft_dice_loss](./doc/soft_dice_Loss.gif)
+      ![soft_dice_loss](./doc/soft_dice_Loss.gif)
   
-  where summation is voxel-wise, and the ![epsilon](./doc/epsilon.gif) is a small constant to avoid zero division.
+    where summation is voxel-wise, and the ![epsilon](./doc/epsilon.gif) is a small constant to avoid zero division.
   
 3. ![L2](./doc/L2.gif) is appiled on the VAE branch output ![I_pred](./doc/I_pred.gif) to match the input image ![I_input](./doc/I_input.gif) :
 
-  ![l2_loss](./doc/L2_Loss.gif)
+    ![l2_loss](./doc/L2_Loss.gif)
   
 4. ![L_KL](./doc/L_KL.gif) is standard VAE penalty term, a KL divergence between the estimated normal distribution ![est_norm](./doc/est_norm.gif) and a prior distribution ![pri_norm](./doc/pri_norm.gif), which has a closed form representation:
 
-  ![KL_Loss](./doc/KL_Loss.gif)
+    ![KL_Loss](./doc/KL_Loss.gif)
   
-  where N is total number of image voxels.
+    where N is total number of image voxels.
  
 5. The hyper-parameter weight of 0.1 was empirically set to provide a good balance between dice and VAE loss terms.
 
