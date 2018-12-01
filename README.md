@@ -16,7 +16,7 @@ Segmentation Labels:
 
 A combination of Vnet and VAE(variation auto-encoder).
 
-  **Table 1.** Encoder structure, where GN stands for group normalization(with group size of 8), Conv - 3\*3\*3 convolution, AddId - addition of identity/skip connection. Repeat column shows the number of repetitions of the block.
+  **Table 1.** Encoder structure, where GN stands for group normalization(with group size of 8), Conv - 3\*3\*3 convolution, AddId - addition of identity / skip connection. Repeat column shows the number of repetitions of the block.
 
   | Name | Ops | Repeat | Output size|
   | :---- | :----------------: | :--: | :--------: |
@@ -31,60 +31,60 @@ A combination of Vnet and VAE(variation auto-encoder).
   | EncoderBlock3 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 4 | 256\*20\*24\*16 |
 
 
-**Table 2.** Decoder structure, where GN stands for group normalization(with group size of 8), Conv - 3\*3\*3 convolution, Conv1 - 1\*1\*1 convolution AddId - addition of identity/skip connection, UpLinear - 3D linear spatial upsampling. Repeat column shows the number of repetitions of the block.
+  **Table 2.** Decoder structure, where Conv1 stands for 1\*1\*1 convolution, UpLinear - 3D linear spatial upsampling. 
+
+  | Name | Ops | Repeat | Output size|
+  | :---- | :----------------: | :--: | :--------: |
+  | DecoderUp2 | Conv1, UpLinear, +EncoderBlock2 | 1 | 128\*40\*48\*32 |    
+  | DecoderBlock2 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 128\*40\*48\*32 |
+  | DecoderUp1 | Conv1, UpLinear, +EncoderBlock1 | 1 | 64\*80\*96\*64 |    
+  | DecoderBlock1 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 64\*80\*96\*64 |
+  | DecoderUp0 | Conv1, UpLinear, +EncoderBlock0 | 1 | 32\*160\*192\*128 |    
+  | DecoderBlock0 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 32\*160\*192\*128 |
+  | DecoderEnd | Conv1, Sigmoid | 1 | 1\*160\*192\*128 |
 
 
-| Name | Ops | Repeat | Output size|
-| :---- | :----------------: | :--: | :--------: |
-| DecoderUp2 | Conv1, UpLinear, +EncoderBlock2 | 1 | 128\*40\*48\*32 |    
-| DecoderBlock2 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 128\*40\*48\*32 |
-| DecoderUp1 | Conv1, UpLinear, +EncoderBlock1 | 1 | 64\*80\*96\*64 |    
-| DecoderBlock1 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 64\*80\*96\*64 |
-| DecoderUp0 | Conv1, UpLinear, +EncoderBlock0 | 1 | 32\*160\*192\*128 |    
-| DecoderBlock0 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 32\*160\*192\*128 |
-| DecoderEnd | Conv1, Sigmoid | 1 | 1\*160\*192\*128 |
+  **Table 3.** VAE decoder branch structure, where Dense stands for fully connected layer. 
 
-
-**Table 3.** VAE decoder branch structure, where GN stands for group normalization(with group size of 8), Conv - 3\*3\*3 convolution, Conv1 - 1\*1\*1 convolution AddId - addition of identity/skip connection, UpLinear - 3D linear spatial upsampling, Dense - fully connected layer. Repeat column shows the number of repetitions of the block.
-
-| Name | Ops | Repeat | Output size|
-| :---- | :----------------: | :--: | :--------: |
-| VD | GN, ReLU, Conv (16) stride 2, Dense (256) | 1 | 256\*1|
-| VDraw | sample | 1 | 128\*1|
-| VU | Dense, ReLU, Conv1, UpLinear | 1 | 256\*20\*24\*16 |
-| VUp2 | Conv1, UpLinear | 1 | 128\*40\*48\*32 |    
-| VBlock2 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 128\*40\*48\*32 |
-| VUp1 | Conv1, UpLinear | 1 | 64\*80\*96\*64 |    
-| VBlock1 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 64\*80\*96\*64 |
-| VUp0 | Conv1, UpLinear | 1 | 32\*160\*192\*128 |    
-| VBlock0 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 32\*160\*192\*128 |
-| Vend | Conv1 | 1 | 4\*160\*192\*128 |
+  | Name | Ops | Repeat | Output size|
+  | :---- | :----------------: | :--: | :--------: |
+  | VD | GN, ReLU, Conv (16) stride 2, Dense (256) | 1 | 256\*1|
+  | VDraw | sample | 1 | 128\*1|
+  | VU | Dense, ReLU, Conv1, UpLinear | 1 | 256\*20\*24\*16 |
+  | VUp2 | Conv1, UpLinear | 1 | 128\*40\*48\*32 |    
+  | VBlock2 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 128\*40\*48\*32 |
+  | VUp1 | Conv1, UpLinear | 1 | 64\*80\*96\*64 |    
+  | VBlock1 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 64\*80\*96\*64 |
+  | VUp0 | Conv1, UpLinear | 1 | 32\*160\*192\*128 |    
+  | VBlock0 | GN, ReLU, Conv, GN, ReLU, Conv, AddId | 1 | 32\*160\*192\*128 |
+  | Vend | Conv1 | 1 | 4\*160\*192\*128 |
 
 sample ~ ![sample](./doc/sample_N.gif)
 
 ## Loss
 
-The loss function consists of 3 terms:
+1. The loss function consists of 3 terms:
 
-  ![loss](./doc/combined_Loss.gif)
+      ![loss](./doc/combined_Loss.gif)
   
-![L_dice](./doc/L_dice.gif) is applied to the decoder output ![p_pred](./doc/p_pred.gif) to match the segmentation mask ![p_true](./doc/p_true.gif) :
+  
+2. ![L_dice](./doc/L_dice.gif) is applied to the decoder output ![p_pred](./doc/p_pred.gif) to match the segmentation mask ![p_true](./doc/p_true.gif) :
 
-  ![soft_dice_loss](./doc/soft_dice_Loss.gif)
+      ![soft_dice_loss](./doc/soft_dice_Loss.gif)
   
-  where summation is voxel-wise, and the ![epsilon](./doc/epsilon.gif) is asmall constant to avoid zero division.
+    where summation is voxel-wise, and the ![epsilon](./doc/epsilon.gif) is a small constant to avoid zero division.
   
-![L2](./doc/L2.gif) is appiled on the VAE branch output ![I_pred](./doc/I_pred.gif) to match the input image ![I_input](./doc/I_input.gif) :
+3. ![L2](./doc/L2.gif) is appiled on the VAE branch output ![I_pred](./doc/I_pred.gif) to match the input image ![I_input](./doc/I_input.gif) :
 
-  ![l2_loss](./doc/L2_Loss.gif)
+    ![l2_loss](./doc/L2_Loss.gif)
   
-![L_KL](./doc/L_KL.gif) is standard VAE penalty term, a KL divergence between the estimated normal distribution ![est_norm](./doc/est_norm.gif) and a prior distribution ![pri_norm](./doc/pri_norm.gif), which has a closed form representation:
+4. ![L_KL](./doc/L_KL.gif) is standard VAE penalty term, a KL divergence between the estimated normal distribution ![est_norm](./doc/est_norm.gif) and a prior distribution ![pri_norm](./doc/pri_norm.gif), which has a closed form representation:
 
-  ![KL_Loss](./doc/KL_Loss.gif)
+    ![KL_Loss](./doc/KL_Loss.gif)
   
-  where N is total number of image voxels.
+    where N is total number of image voxels.
  
-The hyper-parameter weight of 0.1 was empirically set to provide a good balance between dice and VAE loss terms.
+5. The hyper-parameter weight of 0.1 was empirically set to provide a good balance between dice and VAE loss terms.
 
 ## Dependencies
 
