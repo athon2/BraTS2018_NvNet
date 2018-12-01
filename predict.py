@@ -18,7 +18,7 @@ config["best_model_file"] = os.path.join(config["result_path"], config["model_fi
 config["checkpoint_file"] = None  # Load model from checkpoint file
 config["pred_data_file"] = os.path.abspath("isensee_mixed_brats_data.h5") # data file for prediction
 config["prediction_dir"] = os.path.abspath("./prediction/")
-
+config["load_from_data_parallel"] = False # Load model trained on multi-gpu to predict on single gpu.
         
 def init_model_from_states(config):
     print("Init model...")
@@ -28,16 +28,17 @@ def init_model_from_states(config):
         # model = torch.nn.DataParallel(model)   # multi-gpu training
         model = model.cuda()
     checkpoint = torch.load(config["best_model_file"])  
-    # print(checkpoint)
     state_dict = checkpoint["state_dict"]
-    
-    # from collections import OrderedDict     # Load state_dict from checkpoint model trained by multi-gpu 
-    # new_state_dict = OrderedDict()
-    # for k, v in state_dict.items():
-    #     name = k[7:]
-    #     new_state_dict[name] = v
-    
-    model.load_state_dict(new_state_dict)
+    if not config["load_from_data_parallel"]:
+        model.load_state_dict(state_dict)
+    else:
+        from collections import OrderedDict     # Load state_dict from checkpoint model trained by multi-gpu 
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = k[7:]
+            new_state_dict[name] = v
+            
+        model.load_state_dict(new_state_dict)
 
     return model
 
@@ -48,7 +49,7 @@ def predict(model, model_prediction_dir):
     try:
         data_file = tables.open_file(config["pred_data_file"], "r")
         for index in range(len(data_file.root.data)):
-            if "subject_idx" in data_file.root:
+            if "subject_ids" in data_file.root:
                 case_dir = os.path.join(model_prediction_dir, data_file.root.subject_ids[index].decode('utf-8'))
             else:
                 case_dir = os.path.join(output_dir, "pred_case_{}".format(index))
