@@ -106,12 +106,13 @@ def main():
                   logger=train_logger)
         scheduler.step(val_loss)
         if config["checkpoint"] and val_acc > max_val_acc:
+            max_val_acc = val_acc
             save_dir = os.path.join(config["result_path"], config["model_file"].split("/")[-1].split(".h5")[0])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            save_states_path = os.path.join(save_dir,'epoch_{0}_val_loss_{1:.4f}.pth'.format(epoch, val_loss))
+            save_states_path = os.path.join(save_dir,'epoch_{0}_val_loss_{1:.4f}_acc_{2:.4f}.pth'.format(i, val_loss, val_acc))
             states = {
-                'epoch': epoch + 1,
+                'epoch': i + 1,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
