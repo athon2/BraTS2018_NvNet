@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 from nilearn.image import new_img_like
-from .utils import read_image, read_image_files
+from .utils import read_image, read_image_files, resize
 from .nilearn_custom_utils.nilearn_utils import crop_img_to, crop_img
 
 

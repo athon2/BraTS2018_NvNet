@@ -10,6 +10,9 @@ runs/*
 isensee_mixed*
 *.log
 main_label_*.py
-
+data/
+*.pkl
+*.h5
+*.hf5
 # not ignore
 !.gitkeep

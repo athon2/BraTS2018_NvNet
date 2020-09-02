@@ -7,7 +7,7 @@ import glob
 from nilearn.image import new_img_like
 from utils.utils import read_image,resize,get_multi_class_labels
 from utils.normalize import find_downsized_info
-from main import config
+from predict import config
 def get_cases(cases_dir):
     cases_list = glob.glob(os.path.join(cases_dir, "*", "postprocessed_prediction.nii.gz"))
     return cases_list
@@ -45,7 +45,6 @@ def postprocessing(case_dir):
         iter_data = multi_label_data.copy()
         iteration = 1
         while True:
-            # print("iter:", iteration)
             tmp_data = np.zeros_like(iter_data)
             for label_channel in range(iter_data.shape[0]):    
                 if iteration > 2 and label_channel == 2:
@@ -93,8 +92,8 @@ def reconstruct(cases_list, data_src, output_dir, crop_size=(128, 128, 128), ori
 if __name__ == "__main__":
     data_src = "./data/BraTs_2018_Data_Validation/"    # original .nii.gz files
     output_dir = os.path.join(config["prediction_dir"],"Reconstruct") # reconstructed results (128,128,128) => (240, 240, 155)
-    cases_dir = os.path.join(config["prediction_dir"],config["model_file"].split(".h5")[0]) # prediction results get by predict.py
-    
+    cases_dir = os.path.join(config["prediction_dir"],config["model_file"].split(".h5")[0]) # prediction results (128,128,128)
+
     postprocessing(cases_dir)
     cases_list = get_cases(cases_dir)
     if not os.path.exists(output_dir):
